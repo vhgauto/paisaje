@@ -1,3 +1,6 @@
+rasters/
+datos/
+
 # History files
 .Rhistory
 .Rapp.history

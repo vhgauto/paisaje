@@ -1,0 +1,17 @@
+layer	level	class	id	metric	value	conectividad	metrica
+1	class	-1	NA	np	150683	0.1	Number of patches
+1	class	0	NA	np	45871	0.1	Number of patches
+1	class	1	NA	np	12308	0.1	Number of patches
+1	class	2	NA	np	15311	0.1	Number of patches
+1	class	-1	NA	np	128799	0.3	Number of patches
+1	class	0	NA	np	45871	0.3	Number of patches
+1	class	1	NA	np	12308	0.3	Number of patches
+1	class	2	NA	np	15311	0.3	Number of patches
+1	class	-1	NA	np	89919	0.7	Number of patches
+1	class	0	NA	np	45871	0.7	Number of patches
+1	class	1	NA	np	12308	0.7	Number of patches
+1	class	2	NA	np	15311	0.7	Number of patches
+1	class	-1	NA	np	10490	1	Number of patches
+1	class	0	NA	np	45871	1	Number of patches
+1	class	1	NA	np	12308	1	Number of patches
+1	class	2	NA	np	15311	1	Number of patches

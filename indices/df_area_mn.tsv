@@ -1,0 +1,17 @@
+layer	level	class	id	metric	value	conectividad	metrica
+1	class	-1	NA	area_mn	0.7380804735769796	0.1	Mean of patch area
+1	class	0	NA	area_mn	3.5175422380153036	0.1	Mean of patch area
+1	class	1	NA	area_mn	29.537378940526484	0.1	Mean of patch area
+1	class	2	NA	area_mn	1.8816863692769905	0.1	Mean of patch area
+1	class	-1	NA	area_mn	0.8634863624717583	0.3	Mean of patch area
+1	class	0	NA	area_mn	3.517542238015304	0.3	Mean of patch area
+1	class	1	NA	area_mn	29.537378940526484	0.3	Mean of patch area
+1	class	2	NA	area_mn	1.8816863692769905	0.3	Mean of patch area
+1	class	-1	NA	area_mn	1.236848496980616	0.7	Mean of patch area
+1	class	0	NA	area_mn	3.5175422380153036	0.7	Mean of patch area
+1	class	1	NA	area_mn	29.537378940526484	0.7	Mean of patch area
+1	class	2	NA	area_mn	1.8816863692769905	0.7	Mean of patch area
+1	class	-1	NA	area_mn	10.602114394661584	1	Mean of patch area
+1	class	0	NA	area_mn	3.5175422380153036	1	Mean of patch area
+1	class	1	NA	area_mn	29.537378940526484	1	Mean of patch area
+1	class	2	NA	area_mn	1.8816863692769905	1	Mean of patch area

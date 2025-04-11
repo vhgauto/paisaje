@@ -1,6 +1,6 @@
 ---
 title: "Análisis del paisaje"
-format: 
+format:
   html:
     number-sections: true
     embed-resources: true
@@ -13,12 +13,12 @@ format:
         href: https://github.com/vhgauto/paisaje
     theme:
       - extras/estilo.scss
-execute: 
+execute:
   echo: true
   eval: true
-editor_options: 
+editor_options:
   chunk_output_type: console
-author: 
+author:
   - name: Víctor Gauto
     orcid: 0000-0001-9960-8558
     corresponding: true
@@ -101,8 +101,8 @@ read_delim(
     names = c("value", "tipo"),
     too_many = "merge"
   ) |>
-  mutate(value = as.integer(value)) |> 
-  rename(Valor = value, Tipo = tipo) |> 
+  mutate(value = as.integer(value)) |>
+  rename(Valor = value, Tipo = tipo) |>
   gt::gt()
 ```
 
@@ -177,9 +177,9 @@ Para visualizar el efecto de la dependencia del terreno (`terrain_dependency`) s
 ```{r}
 #| eval: false
 
-f_conectividad <- function(x) {
-  print(paste0("Conectividad: ", x))
-  
+f_dependencia <- function(x) {
+  print(paste0("Dependencia del terreno: ", x))
+
   r_land <- flsgen_generate(
     estructura,
     terrain_file = dem,
@@ -191,12 +191,12 @@ f_conectividad <- function(x) {
     x = ext(dem)$"xmin",
     y = ext(dem)$"ymax"
   )
-  
+
   writeRaster(r_land, filename = paste0("rasters/land-", x, ".tif"))
 }
 
-conectividad <- c(.1, .3, .7, 1)
-walk(conectividad, f_conectividad)
+dependencias <- c(.1, .3, .7, 1)
+walk(dependencias, f_dependencia)
 ```
 
 Los escenarios generados son:
@@ -208,7 +208,7 @@ Los escenarios generados son:
 #| layout-ncol: 2
 #| layout-nrow: 2
 
-conectividad <- c(.1, .3, .7, 1)
+dependencias <- c(.1, .3, .7, 1)
 clases <- c(30, 40, 50) # Grassland, Agriculture, Urban
 
 d_r <- d |>
@@ -219,7 +219,7 @@ d_r <- d |>
     tipo = "X",
     col = "grey70"
   )
-  
+
 col_r_df <- d_r |>
   select(-tipo) |>
   as.data.frame()
@@ -237,8 +237,8 @@ land_raster <- map(land_raster, f_estilo)
 walk(
   1:4,
   ~plot(
-    land_raster[[.x]], axes = FALSE, mar = c(1, 1, 1, 8), 
-    main = paste0("Dependencia del terreno: ", conectividad[.x])
+    land_raster[[.x]], axes = FALSE, mar = c(1, 1, 1, 8),
+    main = paste0("Dependencia del terreno: ", dependencias[.x])
   )
 )
 
@@ -255,46 +255,46 @@ Para el cálculo de las métricas se utiliza el paquete [`{landscapemetrics}`](h
 
 f_area_mn <- function(x) {
   lsm_c_area_mn(land_raster[[x]], directions = 8) |>
-    mutate(conectividad = conectividad[x]) |> 
+    mutate(dependencias = dependencias[x]) |>
     mutate(metrica = "Mean of patch area")
 }
 
-df_area_mn <- map(1:length(conectividad), f_area_mn) |> 
+df_area_mn <- map(1:length(dependencias), f_area_mn) |>
   list_rbind()
 
 write_tsv(df_area_mn, "indices/df_area_mn.tsv")
 
 f_np <- function(x) {
   lsm_c_np(land_raster[[x]], directions = 8) |>
-    mutate(conectividad = conectividad[x]) |> 
+    mutate(dependencias = dependencias[x]) |>
     mutate(metrica = "Number of patches")
 }
 
-df_np <- map(1:length(conectividad), f_np) |> 
+df_np <- map(1:length(dependencias), f_np) |>
   list_rbind()
 
 write_tsv(df_np, "indices/df_np.tsv")
 ```
 
-Los valores se obtienen para cada clase elegida previamente. Se observa que para cada valor de `conectividad` las métricas coinciden.
+Los valores se obtienen para cada clase elegida previamente. Se observa que para cada valor de `terrain_dependency` las métricas coinciden.
 
 ```{r}
-read_tsv("indices/df_area_mn.tsv", show_col_types = FALSE) |> 
-  filter(class != -1) |> 
-  mutate(value = round(value, 2)) |> 
-  inner_join(d_r, by = join_by(class == value)) |> 
+read_tsv("indices/df_area_mn.tsv", show_col_types = FALSE) |>
+  filter(class != -1) |>
+  mutate(value = round(value, 2)) |>
+  inner_join(d_r, by = join_by(class == value)) |>
   pivot_wider(
     names_from = conectividad,
     values_from = value,
     names_prefix = "Dependencia: "
-  ) |> 
-  select(Tipo = tipo, starts_with("Dependencia")) |> 
-  gt() |> 
-  tab_header("Mean of patch area") |> 
+  ) |>
+  select(Tipo = tipo, starts_with("Dependencia")) |>
+  gt() |>
+  tab_header("Mean of patch area") |>
   tab_style(
     locations = cells_body(columns = starts_with("Dependencia")),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |> 
+  ) |>
   fmt_number(
     columns = everything(),
     dec_mark = ",",
@@ -302,22 +302,22 @@ read_tsv("indices/df_area_mn.tsv", show_col_types = FALSE) |>
     sep_mark = "."
   )
 
-read_tsv("indices/df_np.tsv", show_col_types = FALSE) |> 
-  filter(class != -1) |> 
-  mutate(value = round(value, 2)) |> 
-  inner_join(d_r, by = join_by(class == value)) |> 
+read_tsv("indices/df_np.tsv", show_col_types = FALSE) |>
+  filter(class != -1) |>
+  mutate(value = round(value, 2)) |>
+  inner_join(d_r, by = join_by(class == value)) |>
   pivot_wider(
     names_from = conectividad,
     values_from = value,
     names_prefix = "Dependencia: "
-  ) |> 
-  select(Tipo = tipo, starts_with("Dependencia")) |> 
-  gt() |> 
-  tab_header("Number of patches") |> 
+  ) |>
+  select(Tipo = tipo, starts_with("Dependencia")) |>
+  gt() |>
+  tab_header("Number of patches") |>
   tab_style(
     locations = cells_body(columns = starts_with("Dependencia")),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |> 
+  ) |>
   fmt_number(
     columns = everything(),
     dec_mark = ",",
@@ -360,17 +360,17 @@ tibble(
   `Number of patches` = c("[700, 800]", "[800, 1100]"),
   `Patch area` = c("[5500, 14600]", "[9500, 11060]"),
   `Proportion of landscape` = c("10%", "-")
-) |> 
-  gt() |> 
+) |>
+  gt() |>
   cols_label(
     `Number of patches` = md("Number of<br>patches"),
     `Proportion of landscape` = md("Proportion of<br>landscape"),
     "Clase" = ""
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = -Clase),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |> 
+  ) |>
   tab_header(title = md("**Caso I**"))
 ```
 
@@ -387,17 +387,17 @@ tibble(
   `Number of patches` = c("[700, 800]", "[700, 800]"),
   `Patch area` = c("[15500, 114600]", "[15500, 114600]"),
   `Proportion of landscape` = c("-", "25%")
-) |> 
-  gt() |> 
+) |>
+  gt() |>
   cols_label(
     `Number of patches` = md("Number of<br>patches"),
     `Proportion of landscape` = md("Proportion of<br>landscape"),
     "Clase" = ""
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = -Clase),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |> 
+  ) |>
   tab_header(title = md("**Caso II**"))
 ```
 
@@ -515,7 +515,7 @@ d_custom <- tibble(
   value = as.integer(c(0, 1)),
   tipo = c("Clase 1", "Clase 2"),
   col = c("#E41A1C", "#4DAF4A")
-) |> 
+) |>
   add_row(
     value = as.integer(-1),
     tipo = "X",
@@ -538,7 +538,7 @@ d_custom2 <- tibble(
   value = as.integer(c(0, 1)),
   tipo = c("Clase A", "Clase B"),
   col = c("#E41A1C", "#4DAF4A")
-) |> 
+) |>
   add_row(
     value = as.integer(-1),
     tipo = "X",
@@ -568,22 +568,22 @@ df_custom_np <- lsm_c_np(r_custom)
 df_custom_pland <- lsm_c_pland(r_custom)
 
 bind_rows(
-  df_custom_np |> 
+  df_custom_np |>
     mutate(metrica = "Number of patches"),
-  df_custom_pland |> 
+  df_custom_pland |>
     mutate(metrica = "Percentage of landscape of class")
-) |> 
+) |>
   write_tsv("datos/df_custom.tsv")
 
 df_custom_np2 <- lsm_c_np(r_custom2)
 df_custom_pland2 <- lsm_c_pland(r_custom2)
 
 bind_rows(
-  df_custom_np2 |> 
+  df_custom_np2 |>
     mutate(metrica = "Number of patches"),
-  df_custom_pland2 |> 
+  df_custom_pland2 |>
     mutate(metrica = "Percentage of landscape of class")
-) |> 
+) |>
   write_tsv("datos/df_custom2.tsv")
 ```
 
@@ -592,39 +592,39 @@ bind_rows(
 ::: {.column width="48%"}
 
 ```{r}
-read_tsv("datos/df_custom.tsv", show_col_types = FALSE) |> 
-  filter(class != -1) |> 
+read_tsv("datos/df_custom.tsv", show_col_types = FALSE) |>
+  filter(class != -1) |>
   mutate(
     clase = if_else(class == 0, "Clase 1", "Clase 2")
-  ) |> 
+  ) |>
   pivot_wider(
     names_from = metrica,
     values_from = value,
     id_cols = clase
-  ) |> 
-  select(clase, `Number of patches`, `Percentage of landscape of class`) |> 
-  gt() |> 
+  ) |>
+  select(clase, `Number of patches`, `Percentage of landscape of class`) |>
+  gt() |>
   cols_label(
     `Number of patches` = md("Number of<br>patches"),
     `Percentage of landscape of class` = md("Percentage of<br>landscape of class"),
     "clase" = ""
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = -clase),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |> 
+  ) |>
   fmt_number(
     columns = 2,
     dec_mark = ",",
     decimals = 0,
     sep_mark = "."
-  ) |> 
+  ) |>
   fmt_number(
     columns = 3,
     dec_mark = ",",
     decimals = 1,
     sep_mark = "."
-  ) |> 
+  ) |>
   tab_header(title = md("**Caso I**"))
 ```
 
@@ -638,39 +638,39 @@ read_tsv("datos/df_custom.tsv", show_col_types = FALSE) |>
 ```{r}
 #| code-fold: true
 
-read_tsv("datos/df_custom2.tsv", show_col_types = FALSE) |> 
-  filter(class != -1) |> 
+read_tsv("datos/df_custom2.tsv", show_col_types = FALSE) |>
+  filter(class != -1) |>
   mutate(
     clase = if_else(class == 0, "Clase A", "Clase B")
-  ) |> 
+  ) |>
   pivot_wider(
     names_from = metrica,
     values_from = value,
     id_cols = clase
-  ) |> 
-  select(clase, `Number of patches`, `Percentage of landscape of class`) |> 
-  gt() |> 
+  ) |>
+  select(clase, `Number of patches`, `Percentage of landscape of class`) |>
+  gt() |>
   cols_label(
     `Number of patches` = md("Number of<br>patches"),
     `Percentage of landscape of class` = md("Percentage of<br>landscape of class"),
     "clase" = ""
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = -clase),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |> 
+  ) |>
   fmt_number(
     columns = 2,
     dec_mark = ",",
     decimals = 0,
     sep_mark = "."
-  ) |> 
+  ) |>
   fmt_number(
     columns = 3,
     dec_mark = ",",
     decimals = 1,
     sep_mark = "."
-  ) |> 
+  ) |>
   tab_header(title = md("**Caso II**"))
 ```
 

@@ -4,9 +4,13 @@ format:
   html:
     number-sections: true
     embed-resources: true
-    toc: false
+    toc: true
     lang: es
     code-fold: true
+    other-links:
+      - text: Repositorio
+        icon: github
+        href: https://github.com/vhgauto/paisaje
     theme:
       - extras/estilo.scss
 execute: 
@@ -168,7 +172,7 @@ estructura <- flsgen_extract_structure_from_raster(
 
 A partir de `estructura` y `dem` se genera un paisaje, indicando dependencia del terreno, conectividad, rugosidad y parámetros de posición.
 
-Para visualizar el efecto de la conectividad se generan 4 escenarios con valores crecientes: 0.1, 0.3, 0.7 y 1.
+Para visualizar el efecto de la dependencia del terreno (`terrain_dependency`) se generan 4 escenarios con valores crecientes: 0.1, 0.3, 0.7 y 1.
 
 ```{r}
 #| eval: false
@@ -282,13 +286,13 @@ read_tsv("indices/df_area_mn.tsv", show_col_types = FALSE) |>
   pivot_wider(
     names_from = conectividad,
     values_from = value,
-    names_prefix = "Conect: "
+    names_prefix = "Dependencia: "
   ) |> 
-  select(Tipo = tipo, starts_with("conect")) |> 
+  select(Tipo = tipo, starts_with("Dependencia")) |> 
   gt() |> 
   tab_header("Mean of patch area") |> 
   tab_style(
-    locations = cells_body(columns = starts_with("Conect")),
+    locations = cells_body(columns = starts_with("Dependencia")),
     style = cell_text(font = "JetBrains Mono", color = "black")
   ) |> 
   fmt_number(
@@ -305,13 +309,13 @@ read_tsv("indices/df_np.tsv", show_col_types = FALSE) |>
   pivot_wider(
     names_from = conectividad,
     values_from = value,
-    names_prefix = "Conect: "
+    names_prefix = "Dependencia: "
   ) |> 
-  select(Tipo = tipo, starts_with("conect")) |> 
+  select(Tipo = tipo, starts_with("Dependencia")) |> 
   gt() |> 
   tab_header("Number of patches") |> 
   tab_style(
-    locations = cells_body(columns = starts_with("Conect")),
+    locations = cells_body(columns = starts_with("Dependencia")),
     style = cell_text(font = "JetBrains Mono", color = "black")
   ) |> 
   fmt_number(

@@ -7,17 +7,31 @@ format:
     toc: false
     lang: es
     code-fold: true
-    mainfont: Lato
-    grid:
-      sidebar-width: 50px
-      body-width: 1000px
-      margin-width: 50px
-      gutter-width: 1rem
+    theme:
+      - extras/estilo.scss
 execute: 
   echo: true
   eval: true
 editor_options: 
   chunk_output_type: console
+author: 
+  - name: Víctor Gauto
+    orcid: 0000-0001-9960-8558
+    corresponding: true
+    email: victor.gauto@ca.frre.utn.edu.ar
+    affiliations:
+      - name: GISTAQ (UTN-FRRe)
+        url: https://www.instagram.com/gistaq.utn/
+      - name: IIDTHH (UNNE, CONICET)
+        url: https://iidthh.conicet.gov.ar/
+      - name: Instituto Gulich (UNC, CONAE)
+        url: https://ig.conae.unc.edu.ar/
+  - name: Sofía Paná
+    orcid: 0009-0002-4079-1209
+    affiliations:
+      - name: Instituto Gulich (UNC, CONAE)
+        url: https://ig.conae.unc.edu.ar/
+date: last-modified
 ---
 
 El paquete usado es [`{rflsgen}`](https://dimitri-justeau.github.io/rflsgen/), **Neutral Landscape Generator with Targets on Landscape Indices**.

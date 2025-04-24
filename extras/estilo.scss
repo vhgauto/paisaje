@@ -9,5 +9,19 @@
 $font-family-sans-serif: "Lato", sans-serif;
 $font-family-monospace: "JetBrains Mono";
 
+$c1: #8E063B;
+
 /*-- scss:rules --*/
 
+.header-section-number {
+  color: $c1;
+}
+
+h1.title, .title.h1 {
+  color: $c1;
+  font-size: 5em;
+}
+
+a {
+  color: lighten($c1, 25);
+}

@@ -25,3 +25,7 @@ h1.title, .title.h1 {
 a {
   color: lighten($c1, 25);
 }
+
+#title-block-header.quarto-title-block.default .quarto-title-meta-heading {
+    font-weight: 800;
+}

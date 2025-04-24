@@ -6,6 +6,9 @@ format:
     embed-resources: true
     toc: true
     lang: es
+    language:
+      es:
+        title-block-author-plural: "Autores"
     code-fold: true
     other-links:
       - text: Repositorio
@@ -104,7 +107,11 @@ read_delim(
   ) |>
   mutate(value = as.integer(value)) |>
   rename(Valor = value, Tipo = tipo) |>
-  gt::gt()
+  gt::gt() |> 
+  tab_style(
+    locations = cells_body(columns = Valor),
+    style = cell_text(font = "JetBrains Mono", color = "black")
+  )
 ```
 
 Agrego las categorías a `r` e incorporo colores. Visualizo ambos ráster.
@@ -364,7 +371,7 @@ En particular nos interesan dos métricas del paisaje: [**Shannon's diversity in
 $$
 SHDI = - \sum \limits_{i = 1}^{m} (P_{i} \cdot \ln P_{i})
 $$
-Siendo  $P_{i}$ es la proporción de la clase $i$. El valor de $SHDI$ es superior o igual a cero.
+Siendo  $P_{i}$ la proporción de la clase $i$. El valor de $SHDI$ es superior o igual a cero.
 
 
 $$

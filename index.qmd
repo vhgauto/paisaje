@@ -13,6 +13,7 @@ format:
         href: https://github.com/vhgauto/paisaje
     theme:
       - extras/estilo.scss
+    link-external-newwindow: true
 execute:
   echo: true
   eval: true
@@ -248,7 +249,35 @@ walk(
 
 El paquete `{rflsgen}` genera múltiples escenarios pero manteniendo constantes las métricas del paisaje.
 
-Para el cálculo de las métricas se utiliza el paquete [`{landscapemetrics}`](https://r-spatialecology.github.io/landscapemetrics/). Se calcularon: [Mean of patch area](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_c_area_mn.html) y [Number of patches](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_c_np.html).
+En la generación de los escenarios pueden suceder dos errores:
+
+- **Falta de memoria**, al no contar con la suficiente capacidad de procesamiento. Para solucionarlo se puede reducir el tamaño de la región de interés, aumentar el tamaño de píxel o disminuir el número de clases.
+
+- **Incapacidad de generar el ráster**, mostrando el siguiente mensaje:
+
+```r
+Could not generate a raster satisfying the input landscape structure
+```
+
+Esto puede solucionarse eligiendo únicamente las clases de interés.
+
+### Cálculo de métricas a nivel de <span style='text-decoration: underline;'>clase</span>
+
+Para el cálculo de las métricas se utiliza el paquete [`{landscapemetrics}`](https://r-spatialecology.github.io/landscapemetrics/). Las métricas del paisaje a nivel de clase devuelven un valor asociado a cada categoría del ráster de interés.
+
+Se calcularon: [**Mean of patch area**](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_c_area_mn.html) ($AREA_{MN}$) y [**Number of patches**](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_c_np.html) ($NP$).
+
+$$
+AREA_{MN} = mean(AREA[patch_{ij}])
+$$
+
+Siendo $AREA[patch_{ij}]$ el área de cada parche, en hectáreas, y $AREA_{MN}$ mayor a cero.
+
+$$
+NP = n_{i}
+$$
+
+Con $n_{i}$ el número de parches, y $NP$ resulta mayor a 1.
 
 ```{r}
 #| eval: false
@@ -326,18 +355,74 @@ read_tsv("indices/df_np.tsv", show_col_types = FALSE) |>
   )
 ```
 
-En la generación de los escenarios pueden suceder dos errores:
+### Cálculo de métricas a nivel de <span style='text-decoration: underline;'>paisaje</span>
 
-- **Falta de memoria**, al no contar con la suficiente capacidad de procesamiento. Para solucionarlo se puede reducir el tamaño de la región de interés, aumentar el tamaño de píxel o disminuir el número de clases.
+Las métricas a nivel del paisaje obtenidas por el paquete `{landscapemetrics}` calculan un único valor para cada ráster procesado.
 
-- **Incapacidad de generar el ráster**, mostrando el siguiente mensaje:
+En particular nos interesan dos métricas del paisaje: [**Shannon's diversity index**](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_shdi.html) ($SHDI$) y [**Patch richness density**](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_prd.html) ($PRD$). Sus expresiones se muestran a continuación.
 
-```r
-Could not generate a raster satisfying the input landscape structure
+$$
+SHDI = - \sum \limits_{i = 1}^{m} (P_{i} \cdot \ln P_{i})
+$$
+Siendo  $P_{i}$ es la proporción de la clase $i$. El valor de $SHDI$ es superior o igual a cero.
+
+
+$$
+PRD = \frac{m} {A} \cdot 10000 \cdot 100
+$$
+
+Con $m$ el número de clases y $A$ el área total en m<sup>2</sup>. El valor de $PRD$ es en unidades por 100 hectáreas.
+
+Para los cuatro escenarios propuestos de dependencia del terreno variable, los resultados son:
+
+```{r}
+#| eval: false
+#| echo: true
+
+f_shannon <- function(x) {
+  lsm_l_shdi(land_raster[[x]]) |> 
+    select(shannon = value) |> 
+    mutate(dependencia_terreno = dependencias[x])
+}
+
+f_richness <- function(x) {
+  lsm_l_prd(land_raster[[x]]) |> 
+    select(richness = value) |> 
+    mutate(dependencia_terreno = dependencias[x])
+}
+
+df_shannon <- map(1:length(dependencias), f_shannon) |> 
+  list_rbind()
+
+df_richness <- map(1:length(dependencias), f_richness) |> 
+  list_rbind()
+
+inner_join(df_shannon, df_richness, by = join_by(dependencia_terreno)) |> 
+  write_tsv("datos/df_shannon_richness.tsv")
 ```
 
-Esto puede solucionarse eligiendo únicamente las clases de interés.
-
+```{r}
+read_tsv("datos/df_shannon_richness.tsv", show_col_types = FALSE) |> 
+  relocate(2, 1, 3) |> 
+  gt() |> 
+  fmt_number(
+    columns = shannon,
+    decimals = 3
+  ) |>
+  fmt_number(
+    columns = richness,
+    decimals = 6
+  ) |>
+  tab_style(
+    locations = cells_body(columns = everything()),
+    style = cell_text(font = "JetBrains Mono", color = "black")
+  ) |> 
+  cols_label(
+    dependencia_terreno ~ md("Dependencia<br>del terreno"),
+    shannon = md("Shannon's<br>diversity index"),
+    richness = md("Patch richness<br>density")
+  )
+```
 
 ## Estructura del paisaje propia
 
@@ -677,4 +762,3 @@ read_tsv("datos/df_custom2.tsv", show_col_types = FALSE) |>
 :::
 
 ::::
-

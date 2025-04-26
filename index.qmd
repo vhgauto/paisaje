@@ -180,7 +180,7 @@ estructura <- flsgen_extract_structure_from_raster(
 
 A partir de `estructura` y `dem` se genera un paisaje, indicando dependencia del terreno, conectividad, rugosidad y parámetros de posición.
 
-Para visualizar el efecto de la dependencia del terreno (`terrain_dependency`) se generan 4 escenarios con valores crecientes: 0.1, 0.3, 0.7 y 1.
+Para visualizar el efecto de la dependencia del terreno (`terrain_dependency`) se generan 10 escenarios con valores crecientes entre 0,1 y 1,0.
 
 ```{r}
 #| eval: false
@@ -203,11 +203,11 @@ f_dependencia <- function(x) {
   writeRaster(r_land, filename = paste0("rasters/land-", x, ".tif"))
 }
 
-dependencias <- c(.1, .3, .7, 1)
+dependencias <- seq(.1, 1, .1)
 walk(dependencias, f_dependencia)
 ```
 
-Los escenarios generados son:
+Se muestran a continuación los escenarios para las dependencias del terreno 0,1, 0,3, 0,7 y 1,0.
 
 ::: {.column-screen-inset}
 
@@ -320,22 +320,34 @@ read_tsv("indices/df_area_mn.tsv", show_col_types = FALSE) |>
   mutate(value = round(value, 2)) |>
   inner_join(d_r, by = join_by(class == value)) |>
   pivot_wider(
-    names_from = conectividad,
+    names_from = tipo,
     values_from = value,
-    names_prefix = "Dependencia: "
-  ) |>
-  select(Tipo = tipo, starts_with("Dependencia")) |>
+    id_cols = dependencias
+  ) |> 
   gt() |>
   tab_header("Mean of patch area") |>
   tab_style(
-    locations = cells_body(columns = starts_with("Dependencia")),
+    locations = cells_body(columns = everything()),
     style = cell_text(font = "JetBrains Mono", color = "black")
   ) |>
   fmt_number(
-    columns = everything(),
+    columns = -dependencias,
     dec_mark = ",",
-    decimals = 2,
+    decimals = 3,
     sep_mark = "."
+  ) |>
+  fmt_number(
+    columns = dependencias,
+    dec_mark = ",",
+    decimals = 1,
+    sep_mark = "."
+  ) |>
+  tab_spanner(
+    label = "Clase",
+    columns = -dependencias
+  ) |> 
+  cols_label(
+    dependencias ~ md("Dependencia<br>del terreno")
   )
 
 read_tsv("indices/df_np.tsv", show_col_types = FALSE) |>
@@ -343,22 +355,34 @@ read_tsv("indices/df_np.tsv", show_col_types = FALSE) |>
   mutate(value = round(value, 2)) |>
   inner_join(d_r, by = join_by(class == value)) |>
   pivot_wider(
-    names_from = conectividad,
+    names_from = tipo,
     values_from = value,
-    names_prefix = "Dependencia: "
-  ) |>
-  select(Tipo = tipo, starts_with("Dependencia")) |>
+    id_cols = dependencias
+  ) |> 
   gt() |>
   tab_header("Number of patches") |>
   tab_style(
-    locations = cells_body(columns = starts_with("Dependencia")),
+    locations = cells_body(columns = everything()),
     style = cell_text(font = "JetBrains Mono", color = "black")
   ) |>
   fmt_number(
-    columns = everything(),
+    columns = -dependencias,
     dec_mark = ",",
     decimals = 0,
     sep_mark = "."
+  ) |>
+  fmt_number(
+    columns = dependencias,
+    dec_mark = ",",
+    decimals = 1,
+    sep_mark = "."
+  ) |>
+  tab_spanner(
+    label = "Clase",
+    columns = -dependencias
+  ) |> 
+  cols_label(
+    dependencias ~ md("Dependencia<br>del terreno")
   )
 ```
 
@@ -392,14 +416,14 @@ f_shannon <- function(x) {
     mutate(dependencia_terreno = dependencias[x])
 }
 
+df_shannon <- map(1:length(dependencias), f_shannon) |> 
+  list_rbind()
+
 f_richness <- function(x) {
   lsm_l_prd(land_raster[[x]]) |> 
     select(richness = value) |> 
     mutate(dependencia_terreno = dependencias[x])
 }
-
-df_shannon <- map(1:length(dependencias), f_shannon) |> 
-  list_rbind()
 
 df_richness <- map(1:length(dependencias), f_richness) |> 
   list_rbind()
@@ -414,11 +438,21 @@ read_tsv("datos/df_shannon_richness.tsv", show_col_types = FALSE) |>
   gt() |> 
   fmt_number(
     columns = shannon,
-    decimals = 3
+    decimals = 3,
+    dec_mark = ",",
+    sep_mark = "."
   ) |>
   fmt_number(
     columns = richness,
-    decimals = 6
+    decimals = 6,
+    dec_mark = ",",
+    sep_mark = "."
+  ) |>
+  fmt_number(
+    columns = dependencia_terreno,
+    decimals = 1,
+    dec_mark = ",",
+    sep_mark = "."
   ) |>
   tab_style(
     locations = cells_body(columns = everything()),

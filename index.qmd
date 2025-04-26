@@ -429,11 +429,11 @@ df_richness <- map(1:length(dependencias), f_richness) |>
   list_rbind()
 
 inner_join(df_shannon, df_richness, by = join_by(dependencia_terreno)) |> 
-  write_tsv("datos/df_shannon_richness.tsv")
+  write_tsv("indices/df_shannon_richness.tsv")
 ```
 
 ```{r}
-read_tsv("datos/df_shannon_richness.tsv", show_col_types = FALSE) |> 
+read_tsv("indices/df_shannon_richness.tsv", show_col_types = FALSE) |> 
   relocate(2, 1, 3) |> 
   gt() |> 
   fmt_number(

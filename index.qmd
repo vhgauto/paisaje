@@ -452,6 +452,7 @@ La métricas de clase que mostraron cambios con la dependencia del terreno se ob
 #| fig-dpi: 300
 #| warning: false
 #| message: false
+#| eval: false
 
 g1 <- m_clase |>
   filter(as.numeric(metric) > 12) |> 
@@ -470,7 +471,9 @@ g1 <- m_clase |>
   geom_line(alpha = .8) +
   facet_wrap(vars(titulo), scales = "free", ncol = 10) +
   scale_x_continuous(
-    breaks = c(.1, 1), labels = c("0,1", "1"), expand = c(0, 0),
+    breaks = seq(.1, 1, .1), 
+    labels = c("0,1", "", "", "", "", "", "", "", "", "1"), 
+    expand = c(0, 0),
     name = NULL
   ) +
   scale_y_continuous(name = NULL) +
@@ -487,6 +490,8 @@ g1 <- m_clase |>
     aspect.ratio = 1,
     plot.margin = margin(r = 10),
     panel.spacing.x = unit(10, "pt"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(linewidth = .1, color = "grey"),
     legend.position = "bottom",
     legend.text = element_text(margin = margin(r = 10)),
     axis.text = element_text(size = rel(.6), color = "black"),

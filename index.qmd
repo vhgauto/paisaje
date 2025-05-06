@@ -107,7 +107,7 @@ read_delim(
   ) |>
   mutate(value = as.integer(value)) |>
   rename(Valor = value, Tipo = tipo) |>
-  gt::gt() |> 
+  gt::gt() |>
   tab_style(
     locations = cells_body(columns = Valor),
     style = cell_text(font = "JetBrains Mono", color = "black")
@@ -268,123 +268,247 @@ Could not generate a raster satisfying the input landscape structure
 
 Esto puede solucionarse eligiendo únicamente las clases de interés.
 
+## Cálculo de métricas del paisaje
+
+Para el cálculo de las métricas se utiliza el paquete [`{landscapemetrics}`](https://r-spatialecology.github.io/landscapemetrics/).
+
+Las métricas se dividen en parche, clase y paisaje. A continuación se muestran los resultados para los escenarios considerando todas las dependencias del terreno.
+
 ### Cálculo de métricas a nivel de <span style='text-decoration: underline;'>clase</span>
 
-Para el cálculo de las métricas se utiliza el paquete [`{landscapemetrics}`](https://r-spatialecology.github.io/landscapemetrics/). Las métricas del paisaje a nivel de clase devuelven un valor asociado a cada categoría del ráster de interés.
-
-Se calcularon: [**Mean of patch area**](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_c_area_mn.html) ($AREA_{MN}$) y [**Number of patches**](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_c_np.html) ($NP$).
-
-$$
-AREA_{MN} = mean(AREA[patch_{ij}])
-$$
-
-Siendo $AREA[patch_{ij}]$ el área de cada parche, en hectáreas, y $AREA_{MN}$ mayor a cero.
-
-$$
-NP = n_{i}
-$$
-
-Con $n_{i}$ el número de parches, y $NP$ resulta mayor a 1.
+Las métricas del paisaje a nivel de clase devuelven un valor asociado a cada categoría del ráster de interés.
 
 ```{r}
-#| eval: false
+#| echo: false
 
-f_area_mn <- function(x) {
-  lsm_c_area_mn(land_raster[[x]], directions = 8) |>
-    mutate(dependencias = dependencias[x]) |>
-    mutate(metrica = "Mean of patch area")
+funcion_generica <- function(raster, funcion) {
+  i <- which(funciones_clase == funcion)
+  print(paste0(i, "/", length(funciones_clase)))
+  print(funcion)
+  ff <- eval(str2lang(funcion))
+  ff(raster)
 }
 
-df_area_mn <- map(1:length(dependencias), f_area_mn) |>
-  list_rbind()
+funciones_clase <- ls("package:landscapemetrics")[
+  str_detect(ls("package:landscapemetrics"), "lsm_c")
+]
+funciones_clase <- funciones_clase[!str_detect(funciones_clase, "_cv|_sd")]
+# elimino: 'lsm_c_enn_mn'
+# 32 funciones
+funciones_clase <- funciones_clase[funciones_clase != "lsm_c_enn_mn"]
 
-write_tsv(df_area_mn, "indices/df_area_mn.tsv")
-
-f_np <- function(x) {
-  lsm_c_np(land_raster[[x]], directions = 8) |>
-    mutate(dependencias = dependencias[x]) |>
-    mutate(metrica = "Number of patches")
+f_loop <- function(z, dep) {
+  map2(
+    .x = land_raster[[z]],
+    .y = funciones_clase,
+    ~funcion_generica(raster = .x, funcion = .y),
+    .progress = TRUE
+  ) |>
+    list_rbind() |>
+    mutate(dependencia_terreno = dep) |>
+    write_csv(paste0("datos/metricas_clase_", dep, ".csv"))
+  beepr::beep(2)
 }
 
-df_np <- map(1:length(dependencias), f_np) |>
-  list_rbind()
+# {
+#   t1 <- Sys.time()
+#   f_loop(10, 1)
+#   t2 <- Sys.time()
+#   t2-t1 # 34m, 43m, 35m, 35m, 41m, 37m, 38m, 32m, 36m, 36m
+# }
 
-write_tsv(df_np, "indices/df_np.tsv")
+# 6h 7m
 ```
 
-Los valores se obtienen para cada clase elegida previamente. Se observa que para cada valor de `terrain_dependency` las métricas coinciden.
+Se calcularon en total `{r} length(funciones_clase)` métricas de clase. Las métricas que son independientes de las dependencias del terreno se muestran en la siguiente tabla.
 
 ```{r}
-read_tsv("indices/df_area_mn.tsv", show_col_types = FALSE) |>
-  filter(class != -1) |>
-  mutate(value = round(value, 2)) |>
-  inner_join(d_r, by = join_by(class == value)) |>
+#| echo: false
+
+metricas_csv <- list.files(
+  path = "datos/",
+  pattern = "_clase_",
+  full.names = TRUE
+)
+
+m_clase <- read_csv(metricas_csv, show_col_types = FALSE) |> 
+  rename(clase = class) |> 
+  inner_join(
+    rename(d_r, clase = value),
+    by = join_by(clase)
+  ) |> 
+  filter(clase != -1) |> 
+  select(metric, valor = value, dependencia_terreno, tipo)
+
+metric_orden <- m_clase |> 
+  mutate(
+    v = scales::rescale(valor),
+    .by = metric
+  ) |> 
+  select(-valor) |> 
   pivot_wider(
     names_from = tipo,
-    values_from = value,
-    id_cols = dependencias
+    values_from = v,
+    id_cols = c(dependencia_terreno, metric)
   ) |> 
-  gt() |>
-  tab_header("Mean of patch area") |>
+  unnest(-metric) |> 
+  mutate(
+    s = Grassland + Agriculture + Urban
+  ) |> 
+  nest(.by = metric) |> 
+  mutate(
+    dep_min = map(data, ~slice_min(.x, order_by = dependencia_terreno)$s),
+    dep_max = map(data, ~slice_max(.x, order_by = dependencia_terreno)$s)
+  ) |> 
+  unnest(cols = starts_with("dep_")) |> 
+  mutate(
+    p = abs(dep_min - dep_max)/((dep_min + dep_max)/2)
+  ) |> 
+  select(metric, data, p) |> 
+  unnest(data) |> 
+  mutate(metric = fct_reorder(metric, p, .fun = mean)) |> 
+  distinct(metric) |> 
+  pull()
+
+m_clase <- mutate(m_clase, metric = fct(metric, levels = levels(metric_orden)))
+```
+
+```{r}
+#| code-fold: true
+#| tbl-cap: Métricas de clase independientes de la dependencia del terreno.
+
+f_contenido_funcion <- function(x) {
+  tools::Rd_db("landscapemetrics")[[paste0("lsm_c_", x, ".Rd")]] |> 
+    as.character()
+}
+
+f_titulo_funcion <- function(x) {
+  if (str_count(x, "\\(") == 1) {
+    r <- str_trim(str_replace(x, " \\(.*?\\)", ""))
+  } else {
+    r <- str_trim(str_extract(x, "^.*?\\(.*?\\)[^()]*")) # OK
+  }
+  return(r)
+}
+
+f_eq <- function(x) {
+  id_eq <- which(x == "\\deqn") + 3
+  x[id_eq]
+}
+
+m_clase |>
+  filter(as.numeric(metric) <= 12) |>
+  reframe(
+    v = median(valor),
+    .by = c(tipo, metric)
+  ) |>
+  pivot_wider(
+    names_from = tipo,
+    values_from = v
+  ) |> 
+  mutate(
+    txt = map(metric, f_contenido_funcion)
+  ) |> 
+  mutate(
+    titulo = map_chr(txt, ~.x[16])
+  ) |> 
+  mutate(
+    eq = map_chr(txt, f_eq)
+  ) |> 
+  mutate(eq = paste0("$$", eq, "$$")) |> 
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+  mutate(
+    link = paste0(
+      "https://r-spatialecology.github.io/landscapemetrics/reference/lsm_c_",
+      metric,
+      ".html"
+    )
+  ) |> 
+  mutate(
+    titulo = glue::glue("[{titulo}]({link})")
+  ) |> 
+  select(Métrica = titulo, Grassland, Agriculture, Urban) |> 
+  gt() |> 
+  fmt_auto(
+    columns = c(Grassland, Agriculture, Urban),
+    locale = "es"
+  ) |> 
   tab_style(
-    locations = cells_body(columns = everything()),
+    locations = cells_body(columns = c(Grassland, Agriculture, Urban)),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |>
-  fmt_number(
-    columns = -dependencias,
-    dec_mark = ",",
-    decimals = 3,
-    sep_mark = "."
-  ) |>
-  fmt_number(
-    columns = dependencias,
-    dec_mark = ",",
-    decimals = 1,
-    sep_mark = "."
-  ) |>
-  tab_spanner(
-    label = "Clase",
-    columns = -dependencias
   ) |> 
-  cols_label(
-    dependencias ~ md("Dependencia<br>del terreno")
+  tab_style(
+    locations = cells_body(columns = c(Métrica)),
+    style = cell_text(align = "left")
+  ) |> 
+  fmt_url(columns = Métrica, color = "#8E063B") |>
+  as_raw_html()
+```
+
+La métricas de clase que mostraron cambios con la dependencia del terreno se observan en la figura de líneas.
+
+```{r}
+#| code-fold: true
+#| fig-dpi: 300
+#| warning: false
+#| message: false
+
+g1 <- m_clase |>
+  filter(as.numeric(metric) > 12) |> 
+  nest(.by = metric) |> 
+  mutate(
+    txt = map(metric, f_contenido_funcion)
+  ) |> 
+  mutate(
+    titulo = map_chr(txt, ~.x[16])
+  ) |> 
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+  mutate(titulo = str_wrap(titulo, 17)) |> 
+  unnest(data) |> 
+  mutate(titulo = fct_reorder(titulo, as.numeric(metric))) |> 
+  ggplot(aes(dependencia_terreno, valor, color = tipo, group = tipo)) +
+  geom_line(alpha = .8) +
+  facet_wrap(vars(titulo), scales = "free", ncol = 10) +
+  scale_x_continuous(
+    breaks = c(.1, 1), labels = c("0,1", "1"), expand = c(0, 0),
+    name = NULL
+  ) +
+  scale_y_continuous(name = NULL) +
+  scale_color_manual(
+    name = NULL,
+    breaks = c("Agriculture", "Grassland", "Urban"),
+    values = c("#984EA3", "#4DAF4A", "#FF7F00")
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(linewidth = 2))
+  ) +
+  theme_bw(base_size = 10, base_family = "Ubuntu") +
+  theme(
+    aspect.ratio = 1,
+    plot.margin = margin(r = 10),
+    panel.spacing.x = unit(10, "pt"),
+    legend.position = "bottom",
+    legend.text = element_text(margin = margin(r = 10)),
+    axis.text = element_text(size = rel(.6), color = "black"),
+    axis.ticks = element_blank(),
+    axis.text.y = element_text(margin = margin(r = 0)),
+    strip.text = element_text(face = "bold", hjust = 0, size = rel(.7)),
+    strip.background = element_blank(),
+    strip.clip = "off"
   )
 
-read_tsv("indices/df_np.tsv", show_col_types = FALSE) |>
-  filter(class != -1) |>
-  mutate(value = round(value, 2)) |>
-  inner_join(d_r, by = join_by(class == value)) |>
-  pivot_wider(
-    names_from = tipo,
-    values_from = value,
-    id_cols = dependencias
-  ) |> 
-  gt() |>
-  tab_header("Number of patches") |>
-  tab_style(
-    locations = cells_body(columns = everything()),
-    style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |>
-  fmt_number(
-    columns = -dependencias,
-    dec_mark = ",",
-    decimals = 0,
-    sep_mark = "."
-  ) |>
-  fmt_number(
-    columns = dependencias,
-    dec_mark = ",",
-    decimals = 1,
-    sep_mark = "."
-  ) |>
-  tab_spanner(
-    label = "Clase",
-    columns = -dependencias
-  ) |> 
-  cols_label(
-    dependencias ~ md("Dependencia<br>del terreno")
-  )
+ggsave(
+  plot = g1,
+  filename = "figuras/metricas_clase_dif.png",
+  width = 30,
+  height = 8.5,
+  units = "cm"
+)
 ```
+
+::: {.column-screen-inset}
+![Métricas de clase variables con la dependencia del terreno.](figuras/metricas_clase_dif.png)
+:::
 
 ### Cálculo de métricas a nivel de <span style='text-decoration: underline;'>paisaje</span>
 
@@ -411,31 +535,31 @@ Para los cuatro escenarios propuestos de dependencia del terreno variable, los r
 #| echo: true
 
 f_shannon <- function(x) {
-  lsm_l_shdi(land_raster[[x]]) |> 
-    select(shannon = value) |> 
+  lsm_l_shdi(land_raster[[x]]) |>
+    select(shannon = value) |>
     mutate(dependencia_terreno = dependencias[x])
 }
 
-df_shannon <- map(1:length(dependencias), f_shannon) |> 
+df_shannon <- map(1:length(dependencias), f_shannon) |>
   list_rbind()
 
 f_richness <- function(x) {
-  lsm_l_prd(land_raster[[x]]) |> 
-    select(richness = value) |> 
+  lsm_l_prd(land_raster[[x]]) |>
+    select(richness = value) |>
     mutate(dependencia_terreno = dependencias[x])
 }
 
-df_richness <- map(1:length(dependencias), f_richness) |> 
+df_richness <- map(1:length(dependencias), f_richness) |>
   list_rbind()
 
-inner_join(df_shannon, df_richness, by = join_by(dependencia_terreno)) |> 
+inner_join(df_shannon, df_richness, by = join_by(dependencia_terreno)) |>
   write_tsv("indices/df_shannon_richness.tsv")
 ```
 
 ```{r}
-read_tsv("indices/df_shannon_richness.tsv", show_col_types = FALSE) |> 
-  relocate(2, 1, 3) |> 
-  gt() |> 
+read_tsv("indices/df_shannon_richness.tsv", show_col_types = FALSE) |>
+  relocate(2, 1, 3) |>
+  gt() |>
   fmt_number(
     columns = shannon,
     decimals = 3,
@@ -457,7 +581,7 @@ read_tsv("indices/df_shannon_richness.tsv", show_col_types = FALSE) |>
   tab_style(
     locations = cells_body(columns = everything()),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |> 
+  ) |>
   cols_label(
     dependencia_terreno ~ md("Dependencia<br>del terreno"),
     shannon = md("Shannon's<br>diversity index"),
@@ -803,3 +927,4 @@ read_tsv("datos/df_custom2.tsv", show_col_types = FALSE) |>
 :::
 
 ::::
+

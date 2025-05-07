@@ -281,7 +281,7 @@ Las métricas del paisaje a nivel de clase devuelven un valor asociado a cada ca
 ```{r}
 #| echo: false
 
-funcion_generica <- function(raster, funcion) {
+funcion_generica_clase <- function(raster, funcion) {
   i <- which(funciones_clase == funcion)
   print(paste0(i, "/", length(funciones_clase)))
   print(funcion)
@@ -293,15 +293,17 @@ funciones_clase <- ls("package:landscapemetrics")[
   str_detect(ls("package:landscapemetrics"), "lsm_c")
 ]
 funciones_clase <- funciones_clase[!str_detect(funciones_clase, "_cv|_sd")]
+
 # elimino: 'lsm_c_enn_mn'
-# 32 funciones
 funciones_clase <- funciones_clase[funciones_clase != "lsm_c_enn_mn"]
 
-f_loop <- function(z, dep) {
+# 32 funciones
+
+f_loop_clase <- function(z, dep) {
   map2(
     .x = land_raster[[z]],
     .y = funciones_clase,
-    ~funcion_generica(raster = .x, funcion = .y),
+    ~funcion_generica_clase(raster = .x, funcion = .y),
     .progress = TRUE
   ) |>
     list_rbind() |>
@@ -312,7 +314,7 @@ f_loop <- function(z, dep) {
 
 # {
 #   t1 <- Sys.time()
-#   f_loop(10, 1)
+#   f_loop_clase(10, 1)
 #   t2 <- Sys.time()
 #   t2-t1 # 34m, 43m, 35m, 35m, 41m, 37m, 38m, 32m, 36m, 36m
 # }
@@ -385,9 +387,18 @@ f_contenido_funcion <- function(x) {
 f_titulo_funcion <- function(x) {
   if (str_count(x, "\\(") == 1) {
     r <- str_trim(str_replace(x, " \\(.*?\\)", ""))
-  } else {
-    r <- str_trim(str_extract(x, "^.*?\\(.*?\\)[^()]*")) # OK
+  } #else {
+  #   r <- str_trim(str_extract(x, "^.*?\\(.*?\\)[^()]*")) # OK
+  # }
+  
+  if (str_count(x, "\\(") == 2) {
+    r <- str_trim(str_extract(x, "^.*?\\(.*?\\)[^()]*"))
   }
+  
+  if (str_count(x, "\\(") == 0) {
+    r <- str_trim(x)
+  }
+  
   return(r)
 }
 
@@ -476,7 +487,10 @@ g1 <- m_clase |>
     expand = c(0, 0),
     name = NULL
   ) +
-  scale_y_continuous(name = NULL) +
+  scale_y_continuous(
+    name = NULL,
+    labels = scales::label_number(big.mark = ".", decimal.mark = ",")
+  ) +
   scale_color_manual(
     name = NULL,
     breaks = c("Agriculture", "Grassland", "Urban"),
@@ -492,7 +506,7 @@ g1 <- m_clase |>
     panel.spacing.x = unit(10, "pt"),
     panel.grid.minor = element_blank(),
     panel.grid.major = element_line(linewidth = .1, color = "grey"),
-    legend.position = "bottom",
+    legend.position = "top",
     legend.text = element_text(margin = margin(r = 10)),
     axis.text = element_text(size = rel(.6), color = "black"),
     axis.ticks = element_blank(),
@@ -517,82 +531,212 @@ ggsave(
 
 ### Cálculo de métricas a nivel de <span style='text-decoration: underline;'>paisaje</span>
 
-Las métricas a nivel del paisaje obtenidas por el paquete `{landscapemetrics}` calculan un único valor para cada ráster procesado.
+```{r}
+#| echo: false
 
-En particular nos interesan dos métricas del paisaje: [**Shannon's diversity index**](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_shdi.html) ($SHDI$) y [**Patch richness density**](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_prd.html) ($PRD$). Sus expresiones se muestran a continuación.
+funcion_generica_paisaje <- function(raster, funcion) {
+  i <- which(funciones_paisaje == funcion)
+  print(paste0(i, "/", length(funciones_paisaje)))
+  print(funcion)
+  ff <- eval(str2lang(funcion))
+  ff(raster)
+}
 
-$$
-SHDI = - \sum \limits_{i = 1}^{m} (P_{i} \cdot \ln P_{i})
-$$
-Siendo  $P_{i}$ la proporción de la clase $i$. El valor de $SHDI$ es superior o igual a cero.
+funciones_paisaje <- ls("package:landscapemetrics")[
+  str_detect(ls("package:landscapemetrics"), "lsm_l")
+]
+funciones_paisaje <- funciones_paisaje[!str_detect(funciones_paisaje, "_cv|_sd")]
 
+funciones_paisaje <- funciones_paisaje[funciones_paisaje != "lsm_l_enn_mn"]
 
-$$
-PRD = \frac{m} {A} \cdot 10000 \cdot 100
-$$
+# 43 funciones
 
-Con $m$ el número de clases y $A$ el área total en m<sup>2</sup>. El valor de $PRD$ es en unidades por 100 hectáreas.
+f_loop_paisaje <- function(z, dep) {
+  map2(
+    .x = land_raster[[z]],
+    .y = funciones_paisaje,
+    ~funcion_generica_paisaje(raster = .x, funcion = .y),
+    .progress = TRUE
+  ) |>
+    list_rbind() |>
+    mutate(dependencia_terreno = dep) |>
+    write_csv(paste0("datos/metricas_paisaje_", dep, ".csv"))
+  beepr::beep(2)
+}
 
-Para los cuatro escenarios propuestos de dependencia del terreno variable, los resultados son:
+# {
+#   t1 <- Sys.time()
+#   f_loop_paisaje(8, .8)
+#   t2 <- Sys.time()
+#   t2-t1 # 33m, 40m, 39m, 38m, 40m, 40m, 36m, 35m, 37m, 34m
+# }
+
+# 6h 12m
+```
+
+A partir de los diez escenarios creados a partir de diferentes dependencias del terreno, se calcularon `{r} length(funciones_paisaje)` métricas del paisaje.
+
+Se muestra a continuación una tabla que resume los valores de las métricas que se mantuvieron constantes, mostrando un único valor por cada métrica.
 
 ```{r}
-#| eval: false
-#| echo: true
+#| echo: false
 
-f_shannon <- function(x) {
-  lsm_l_shdi(land_raster[[x]]) |>
-    select(shannon = value) |>
-    mutate(dependencia_terreno = dependencias[x])
-}
+metricas2_csv <- list.files(
+  path = "datos/",
+  pattern = "_paisaje_",
+  full.names = TRUE
+)
 
-df_shannon <- map(1:length(dependencias), f_shannon) |>
-  list_rbind()
+m_paisaje <- read_csv(metricas2_csv, show_col_types = FALSE) |> 
+  select(metric, valor = value, dependencia_terreno) |> 
+  drop_na()
 
-f_richness <- function(x) {
-  lsm_l_prd(land_raster[[x]]) |>
-    select(richness = value) |>
-    mutate(dependencia_terreno = dependencias[x])
-}
+metric_orden2 <- m_paisaje |> 
+  mutate(
+    v = scales::rescale(valor),
+    .by = metric
+  ) |> 
+  select(-valor) |> 
+  nest(.by = metric) |> 
+  mutate(
+    dep_min = map(data, ~slice_min(.x, order_by = dependencia_terreno)$v),
+    dep_max = map(data, ~slice_max(.x, order_by = dependencia_terreno)$v)
+  ) |> 
+  unnest(cols = starts_with("dep_")) |> 
+  mutate(
+    p = abs(dep_min - dep_max)/((dep_min + dep_max)/2)
+  ) |> 
+  select(metric, data, p) |> 
+  unnest(data) |> 
+  mutate(metric = fct_reorder(metric, p, .fun = mean)) |> 
+  distinct(metric) |> 
+  pull()
 
-df_richness <- map(1:length(dependencias), f_richness) |>
-  list_rbind()
-
-inner_join(df_shannon, df_richness, by = join_by(dependencia_terreno)) |>
-  write_tsv("indices/df_shannon_richness.tsv")
+m_paisaje <- mutate(m_paisaje, metric = fct(metric, levels = levels(metric_orden2)))
 ```
 
 ```{r}
-read_tsv("indices/df_shannon_richness.tsv", show_col_types = FALSE) |>
-  relocate(2, 1, 3) |>
-  gt() |>
-  fmt_number(
-    columns = shannon,
-    decimals = 3,
-    dec_mark = ",",
-    sep_mark = "."
+#| code-fold: true
+#| tbl-cap: Métricas de paisaje independientes de la dependencia del terreno.
+
+f_contenido_funcion2 <- function(x) {
+  tools::Rd_db("landscapemetrics")[[paste0("lsm_l_", x, ".Rd")]] |> 
+    as.character()
+}
+
+m_paisaje |>
+  filter(as.numeric(metric) <= 10) |>
+  reframe(
+    v = median(valor),
+    .by = metric
   ) |>
-  fmt_number(
-    columns = richness,
-    decimals = 6,
-    dec_mark = ",",
-    sep_mark = "."
-  ) |>
-  fmt_number(
-    columns = dependencia_terreno,
-    decimals = 1,
-    dec_mark = ",",
-    sep_mark = "."
-  ) |>
+  mutate(
+    txt = map(metric, f_contenido_funcion2)
+  ) |> 
+  mutate(
+    titulo = map_chr(txt, ~.x[16])
+  ) |> 
+  mutate(
+    eq = map_chr(txt, f_eq)
+  ) |> 
+  mutate(eq = paste0("$$", eq, "$$")) |> 
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+  mutate(
+    link = paste0(
+      "https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_",
+      metric,
+      ".html"
+    )
+  ) |> 
+  mutate(
+    titulo = glue::glue("[{titulo}]({link})")
+  ) |> 
+  select(Métrica = titulo, Valor = v) |> 
+  gt() |> 
+  fmt_auto(
+    columns = Valor,
+    locale = "es"
+  ) |> 
   tab_style(
-    locations = cells_body(columns = everything()),
+    locations = cells_body(columns = Valor),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |>
-  cols_label(
-    dependencia_terreno ~ md("Dependencia<br>del terreno"),
-    shannon = md("Shannon's<br>diversity index"),
-    richness = md("Patch richness<br>density")
-  )
+  ) |> 
+  tab_style(
+    locations = cells_body(columns = c(Métrica)),
+    style = cell_text(align = "left")
+  ) |> 
+  fmt_url(columns = Métrica, color = "#8E063B") |>
+  as_raw_html()
 ```
+
+Con las métricas del paisaje que varían con la dependencia del terreno se creó la siguiente figura.
+
+```{r}
+#| code-fold: true
+#| fig-dpi: 300
+#| warning: false
+#| message: false
+#| eval: false
+
+g2 <- m_paisaje |>
+  filter(as.numeric(metric) > 10) |> 
+  nest(.by = metric) |> 
+  mutate(
+    txt = map(metric, f_contenido_funcion2)
+  ) |> 
+  mutate(
+    titulo = map_chr(txt, ~.x[16])
+  ) |> 
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+  mutate(titulo = str_wrap(titulo, 17)) |> 
+  unnest(data) |> 
+  mutate(titulo = fct_reorder(titulo, as.numeric(metric))) |> 
+  ggplot(aes(dependencia_terreno, valor, group = metric)) +
+  geom_line(alpha = .8, color = "#8E063B") +
+  facet_wrap(vars(titulo), scales = "free", ncol = 8) +
+  scale_x_continuous(
+    breaks = seq(.1, 1, .1), 
+    labels = c("0,1", "", "", "", "", "", "", "", "", "1"), 
+    expand = c(0, 0),
+    name = NULL
+  ) +
+  scale_y_continuous(
+    name = NULL, 
+    labels = scales::label_number(big.mark = ".", decimal.mark = ",")
+  ) +
+  scale_color_manual(name = NULL) +
+  guides(
+    color = guide_legend(override.aes = list(linewidth = 2))
+  ) +
+  theme_bw(base_size = 10, base_family = "Ubuntu") +
+  theme(
+    aspect.ratio = 1,
+    plot.margin = margin(r = 10),
+    panel.spacing.x = unit(10, "pt"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(linewidth = .1, color = "grey"),
+    legend.position = "bottom",
+    legend.text = element_text(margin = margin(r = 10)),
+    axis.text = element_text(size = rel(.6), color = "black"),
+    axis.ticks = element_blank(),
+    axis.text.y = element_text(margin = margin(r = 0)),
+    strip.text = element_text(face = "bold", hjust = 0, size = rel(.7)),
+    strip.background = element_blank(),
+    strip.clip = "off"
+  )
+
+ggsave(
+  plot = g2,
+  filename = "figuras/metricas_paisaje_dif.png",
+  width = 30,
+  height = 17,
+  units = "cm"
+)
+```
+
+::: {.column-screen-inset}
+![Métricas de paisaje variables con la dependencia del terreno.](figuras/metricas_paisaje_dif.png)
+:::
 
 ## Estructura del paisaje propia
 

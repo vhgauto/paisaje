@@ -24,8 +24,16 @@ h1.title, .title.h1 {
 
 a {
   color: lighten($c1, 25);
+  &:hover {
+    color: darken($c1, 25);
+  }
 }
 
 #title-block-header.quarto-title-block.default .quarto-title-meta-heading {
     font-weight: 800;
+}
+
+.sidebar nav[role=doc-toc] ul>li>a.active, .sidebar nav[role=doc-toc] ul>li>ul>li>a.active {
+    border-left: 1px solid $c1;
+    color: $c1 !important;
 }

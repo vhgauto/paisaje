@@ -499,7 +499,7 @@ g1 <- m_clase |>
   guides(
     color = guide_legend(override.aes = list(linewidth = 2))
   ) +
-  theme_bw(base_size = 10, base_family = "Ubuntu") +
+  theme_bw(base_size = 10, base_family = "Lato") +
   theme(
     aspect.ratio = 1,
     plot.margin = margin(r = 10),
@@ -574,7 +574,7 @@ f_loop_paisaje <- function(z, dep) {
 # 6h 12m
 ```
 
-A partir de los diez escenarios creados a partir de diferentes dependencias del terreno, se calcularon `{r} length(funciones_paisaje)` métricas del paisaje.
+A partir de los diez escenarios creados con diferentes dependencias del terreno, se calcularon `{r} length(funciones_paisaje)` métricas del paisaje.
 
 Se muestra a continuación una tabla que resume los valores de las métricas que se mantuvieron constantes, mostrando un único valor por cada métrica.
 
@@ -708,7 +708,7 @@ g2 <- m_paisaje |>
   guides(
     color = guide_legend(override.aes = list(linewidth = 2))
   ) +
-  theme_bw(base_size = 10, base_family = "Ubuntu") +
+  theme_bw(base_size = 10, base_family = "Lato") +
   theme(
     aspect.ratio = 1,
     plot.margin = margin(r = 10),

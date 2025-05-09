@@ -656,7 +656,7 @@ m_paisaje |>
   fmt_auto(
     columns = Valor,
     locale = "es"
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = Valor),
     style = cell_text(font = "JetBrains Mono", color = "black")

@@ -39,6 +39,8 @@ author:
     affiliations:
       - name: Instituto Gulich (UNC, CONAE)
         url: https://ig.conae.unc.edu.ar/
+      - name: IREA
+        url: http://irea.cnr.it/
 date: last-modified
 ---
 
@@ -222,10 +224,22 @@ clases <- c(30, 40, 50) # Grassland, Agriculture, Urban
 d_r <- d |>
   filter(value %in% clases) |>
   mutate(value = as.integer(seq(0, length(clases) - 1, 1))) |>
+  mutate(
+    tipo = if_else(tipo == "Grassland", "Forest", tipo)
+  ) |> 
   add_row(
     value = as.integer(-1),
-    tipo = "X",
-    col = "grey70"
+    tipo = "Grassland",
+    col = "#96D458"
+  ) |> 
+  mutate(
+    col = case_match(
+      tipo,
+      "Forest" ~ "#69A7A7",
+      "Agriculture" ~ "#C199E9",
+      "Urban" ~ "#E65757",
+      .default = col
+    )
   )
 
 col_r_df <- d_r |>
@@ -241,15 +255,21 @@ f_estilo <- function(x) {
 land_list <- list.files(path = "rasters/", pattern = "land-", full.names = TRUE)
 land_raster <- map(land_list, rast)
 land_raster <- map(land_raster, f_estilo)
+land_raster <- set_names(land_raster, seq(.1, 1, .1))
 
-walk(
-  1:4,
-  ~plot(
-    land_raster[[.x]], axes = FALSE, mar = c(1, 1, 1, 8),
-    main = paste0("Dependencia del terreno: ", dependencias[.x])
-  )
+id <- map_dbl(
+  1:length(dependencias),
+  ~which(names(land_raster) == as.character(dependencias)[.x])
 )
 
+walk2(
+  .x = id,
+  .y = 1:length(dependencias),
+  ~plot(
+    land_raster[[.x]], axes = FALSE, mar = c(1, 1, 1, 8),
+    main = paste0("Dependencia del terreno: ", dependencias[.y])
+  )
+)
 ```
 
 :::
@@ -355,7 +375,7 @@ metric_orden <- m_clase |>
   ) |> 
   unnest(-metric) |> 
   mutate(
-    s = Grassland + Agriculture + Urban
+    s = Forest + Agriculture + Urban
   ) |> 
   nest(.by = metric) |> 
   mutate(
@@ -438,14 +458,14 @@ m_clase |>
   mutate(
     titulo = glue::glue("[{titulo}]({link})")
   ) |> 
-  select(Métrica = titulo, Grassland, Agriculture, Urban) |> 
+  select(Métrica = titulo, Forest, Agriculture, Urban) |> 
   gt() |> 
   fmt_auto(
-    columns = c(Grassland, Agriculture, Urban),
+    columns = c(Forest, Agriculture, Urban),
     locale = "es"
   ) |> 
   tab_style(
-    locations = cells_body(columns = c(Grassland, Agriculture, Urban)),
+    locations = cells_body(columns = c(Forest, Agriculture, Urban)),
     style = cell_text(font = "JetBrains Mono", color = "black")
   ) |> 
   tab_style(
@@ -463,7 +483,6 @@ La métricas de clase que mostraron cambios con la dependencia del terreno se ob
 #| fig-dpi: 300
 #| warning: false
 #| message: false
-#| eval: false
 
 g1 <- m_clase |>
   filter(as.numeric(metric) > 12) |> 
@@ -493,8 +512,8 @@ g1 <- m_clase |>
   ) +
   scale_color_manual(
     name = NULL,
-    breaks = c("Agriculture", "Grassland", "Urban"),
-    values = c("#984EA3", "#4DAF4A", "#FF7F00")
+    breaks = c("Forest", "Agriculture", "Urban"),
+    values = c("#69A7A7", "#C199E9", "#E65757")
   ) +
   guides(
     color = guide_legend(override.aes = list(linewidth = 2))
@@ -676,7 +695,6 @@ Con las métricas del paisaje que varían con la dependencia del terreno se cre�
 #| fig-dpi: 300
 #| warning: false
 #| message: false
-#| eval: false
 
 g2 <- m_paisaje |>
   filter(as.numeric(metric) > 10) |> 

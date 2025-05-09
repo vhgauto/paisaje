@@ -1,5 +1,7 @@
 # rasters/
-datos/
+datos/*.tif
+datos/*.tsv
+datos/*.txt
 vectores/
 
 # History files

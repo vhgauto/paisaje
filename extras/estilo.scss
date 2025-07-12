@@ -45,3 +45,7 @@ a {
     border-left: 1px solid $c1;
     color: $c1 !important;
 }
+
+div.callout-note.callout {
+    border-left-color: $c1;
+}

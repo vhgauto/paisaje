@@ -4,6 +4,7 @@ datos/*.tsv
 datos/*.txt
 vectores/
 nutrientes/
+test*
 
 # History files
 .Rhistory

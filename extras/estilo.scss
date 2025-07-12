@@ -6,6 +6,9 @@
 // JetBrains Mono
 @import url('https://fonts.googleapis.com/css2?family=Gloock&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
 
+// Vidaloka
+@import url('https://fonts.googleapis.com/css2?family=Vidaloka&display=swap');
+
 $font-family-sans-serif: "Lato", sans-serif;
 $font-family-monospace: "JetBrains Mono";
 
@@ -20,6 +23,11 @@ $c1: #8E063B;
 h1.title, .title.h1 {
   color: $c1;
   font-size: 5em;
+  font-family: Vidaloka;
+}
+
+h1, h2, h3 {
+  font-family: Vidaloka;
 }
 
 a {

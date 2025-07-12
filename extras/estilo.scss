@@ -11,6 +11,7 @@
 
 $font-family-sans-serif: "Lato", sans-serif;
 $font-family-monospace: "JetBrains Mono";
+$body-bg: #FAFAFA;
 
 $c1: #8E063B;
 
@@ -48,4 +49,8 @@ a {
 
 div.callout-note.callout {
     border-left-color: $c1;
+}
+
+details>summary {
+    color: lightgrey;
 }

@@ -18,6 +18,7 @@ format:
     theme:
       - extras/estilo.scss
     link-external-newwindow: true
+    highlight-style: kate
 execute:
   echo: true
   eval: true
@@ -78,6 +79,7 @@ library(gt)
 library(landscapemetrics)
 library(NLMR)
 library(rflsgen)
+library(patchwork)
 library(terra)
 ```
 
@@ -154,12 +156,13 @@ coltab(r) <- col_df
 #| echo: false
 #| layout-ncol: 2
 
+par(bg = "#FAFAFA")
 plot(
-  r, axes = FALSE, mar = c(1, 1, 1, 8), main = "LULC"
+  r, axes = FALSE, mar = c(1, 1, 1, 8), main = "LULC", background = "#FAFAFA"
 )
 
 plot(
-  dem, axes = FALSE, mar = c(1, 1, 1, 8), main = "DEM"
+  dem, axes = FALSE, mar = c(1, 1, 1, 8), main = "DEM", background = "#FAFAFA"
 )
 ```
 
@@ -263,12 +266,14 @@ id <- map_dbl(
   ~which(names(land_raster) == as.character(dependencias)[.x])
 )
 
+par(bg = "#FAFAFA")
 walk2(
   .x = id,
   .y = 1:length(dependencias),
   ~plot(
     land_raster[[.x]], axes = FALSE, mar = c(1, 1, 1, 8),
-    main = paste0("Dependencia del terreno: ", dependencias[.y])
+    main = paste0("Dependencia del terreno: ", dependencias[.y]),
+    background = "#FAFAFA"
   )
 )
 ```
@@ -510,9 +515,7 @@ g1 <- m_clase |>
   ) +
   scale_color_manual(
     name = NULL,
-    # breaks = c("Forest", "Agriculture", "Urban"),
     breaks = d_r$tipo,
-    # values = c("#69A7A7", "#C199E9", "#E65757")
     values = d_r$col
   ) +
   guides(
@@ -522,6 +525,8 @@ g1 <- m_clase |>
   theme(
     aspect.ratio = 1,
     plot.margin = margin(r = 10),
+    plot.background = element_blank(),
+    panel.background = element_blank(),
     panel.spacing.x = unit(10, "pt"),
     panel.grid.minor = element_blank(),
     panel.grid.major = element_line(linewidth = .1, color = "grey"),
@@ -728,6 +733,8 @@ g2 <- m_paisaje |>
   theme(
     aspect.ratio = 1,
     plot.margin = margin(r = 10),
+    plot.background = element_blank(),
+    panel.background = element_blank(),
     panel.spacing.x = unit(10, "pt"),
     panel.grid.minor = element_blank(),
     panel.grid.major = element_line(linewidth = .1, color = "grey"),
@@ -929,7 +936,7 @@ d_custom <- tibble(
   add_row(
     value = as.integer(-1),
     tipo = "X",
-    col = "grey95"
+    col = "grey90"
   )
 
 col_df_custom <- d_custom |>
@@ -940,7 +947,12 @@ col_df_custom <- d_custom |>
 levels(r_custom) <- d_custom
 coltab(r_custom) <- col_df_custom
 
-plot(r_custom, axes = FALSE, mar = c(1, 1, 1, 4), main = "Caso I")
+par(bg = "#FAFAFA")
+
+plot(
+  r_custom, axes = FALSE, mar = c(1, 1, 1, 4), main = "Caso I",
+  background = "#FAFAFA"
+)
 
 r_custom2 <- rast("rasters/r_custom2.tif")
 
@@ -952,7 +964,7 @@ d_custom2 <- tibble(
   add_row(
     value = as.integer(-1),
     tipo = "X",
-    col = "grey95"
+    col = "grey90"
   )
 
 col_df_custom2 <- d_custom2 |>
@@ -963,7 +975,10 @@ col_df_custom2 <- d_custom2 |>
 levels(r_custom2) <- d_custom2
 coltab(r_custom2) <- col_df_custom2
 
-plot(r_custom2, axes = FALSE, mar = c(1, 1, 1, 4), main = "Caso II")
+plot(
+  r_custom2, axes = FALSE, mar = c(1, 1, 1, 4), main = "Caso II", 
+  background = "#FAFAFA"
+)
 ```
 
 :::

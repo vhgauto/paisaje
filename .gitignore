@@ -5,6 +5,7 @@ datos/*.txt
 vectores/
 nutrientes/
 test*
+scripts/.*
 
 # History files
 .Rhistory

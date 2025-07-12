@@ -3,6 +3,7 @@ datos/*.tif
 datos/*.tsv
 datos/*.txt
 vectores/
+nutrientes/
 
 # History files
 .Rhistory

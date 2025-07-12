@@ -10,6 +10,7 @@ format:
       es:
         title-block-author-plural: "Autores"
     code-fold: true
+    code-summary: Ver código
     other-links:
       - text: Repositorio
         icon: github

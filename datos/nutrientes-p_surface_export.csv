@@ -1,0 +1,17 @@
+clase_nro,sum,clase,prod,esc
+-1,1669.3887939453125,Forest,p_surface_export,1
+0,10334.6337890625,Agriculture,p_surface_export,1
+1,144380.21875,Urban,p_surface_export,1
+2,15591.9189453125,Grassland,p_surface_export,1
+-1,1324.441650390625,Forest,p_surface_export,3
+0,10120.94921875,Agriculture,p_surface_export,3
+1,158193,Urban,p_surface_export,3
+2,14430.30859375,Grassland,p_surface_export,3
+-1,1551.8480224609375,Forest,p_surface_export,7
+0,10086.349609375,Agriculture,p_surface_export,7
+1,139907.859375,Urban,p_surface_export,7
+2,12851.16015625,Grassland,p_surface_export,7
+-1,1551.8853759765625,Forest,p_surface_export,10
+0,10638.4814453125,Agriculture,p_surface_export,10
+1,123013.6953125,Urban,p_surface_export,10
+2,13975.466796875,Grassland,p_surface_export,10

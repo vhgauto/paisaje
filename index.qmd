@@ -359,7 +359,6 @@ m_clase <- read_csv(metricas_csv, show_col_types = FALSE) |>
     rename(d_r, clase = value),
     by = join_by(clase)
   ) |> 
-  filter(clase != -1) |> 
   select(metric, valor = value, dependencia_terreno, tipo)
 
 metric_orden <- m_clase |> 
@@ -457,14 +456,14 @@ m_clase |>
   mutate(
     titulo = glue::glue("[{titulo}]({link})")
   ) |> 
-  select(Métrica = titulo, Forest, Agriculture, Urban) |> 
+  select(Métrica = titulo, Grassland, Forest, Agriculture, Urban) |> 
   gt() |> 
   fmt_auto(
-    columns = c(Forest, Agriculture, Urban),
+    columns = c(Grassland, Forest, Agriculture, Urban),
     locale = "es"
   ) |> 
   tab_style(
-    locations = cells_body(columns = c(Forest, Agriculture, Urban)),
+    locations = cells_body(columns = c(Grassland, Forest, Agriculture, Urban)),
     style = cell_text(font = "JetBrains Mono", color = "black")
   ) |> 
   tab_style(
@@ -510,8 +509,10 @@ g1 <- m_clase |>
   ) +
   scale_color_manual(
     name = NULL,
-    breaks = c("Forest", "Agriculture", "Urban"),
-    values = c("#69A7A7", "#C199E9", "#E65757")
+    # breaks = c("Forest", "Agriculture", "Urban"),
+    breaks = d_r$tipo,
+    # values = c("#69A7A7", "#C199E9", "#E65757")
+    values = d_r$col
   ) +
   guides(
     color = guide_legend(override.aes = list(linewidth = 2))
@@ -1083,231 +1084,3 @@ read_tsv("datos/df_custom2.tsv", show_col_types = FALSE) |>
 :::
 
 ::::
-
-# Aporte de nutrientes por clase
-
-Se calcularon la cantidad de nutrientes (fósforo y nitrógeno) generados por cada clase, según el escenario dado.
-
-Inicialmente se seleccionan las dependencias del terreno 0.1, 0.3, 0.7 y 1. Estos escenarios contienen diferentes distribuciones de clases, en formato ráster.
-
-```{r}
-#| eval: false
-
-# rásters de interés
-clases_files <- paste0("rasters/land-", c(.1, .3, .7, 1), ".tif")
-
-# leo los rásters
-clases_rast <- purrr::map(clases_files, rast)
-```
-
-Los ráster se vectorizan y almacenan para una rápida lectura posterios.
-
-```{r}
-#| eval: false
-
-# vectorizo
-clases_vect <- purrr::map(
-  clases_rast,
-  \(x) {
-    terra::as.polygons(x) |>
-      project(crs(r))
-  }
-)
-
-# nombre de los rásters vectorizados
-clases_vect_files <- paste0("vectores/land-", c(.1, .3, .7, 1), ".gpkg")
-
-# guardo
-purrr::walk2(
-  clases_vect,
-  clases_vect_files,
-  ~ writeVector(.x, .y, overwrite = TRUE)
-)
-```
-
-Leo los vectores. Es requisito utilizar el paquete `{sf}`.
-
-```{r}
-#| eval: false
-
-sf_clases <- purrr::map(
-  clases_vect_files,
-  ~ sf::st_read(.x, quiet = TRUE)
-)
-```
-
-Defino una función para la extracción de las cantidades de nutrientes por clase, por escenario. 
-
-Se emplea el paquete [`{exactextractr}`](https://isciences.gitlab.io/exactextractr/), que permite una extracción de valores de píxel **rápida** y precisa.
-
-```{r}
-#| eval: false
-
-f_extract <- function(raster, vector, producto, escenario) {
-  exactextractr::exact_extract(
-    x = raster,
-    y = vector,
-    fun = "sum",
-    force_df = TRUE,
-    append_cols = "lyr.1",
-    max_cells_in_memory = 230000000
-  ) |>
-    rename(value = "lyr.1") |> 
-    inner_join(d_r, by = join_by(value)) |>
-    mutate(prod = producto) |>
-    mutate(esc = escenario) |>
-    as_tibble()
-}
-```
-
-Luego, defino una función para la lectura de los ráster de nutrientes, de acuerdo con el escenario, extracción de valores de píxel y almacenamiento de los resultados.
-
-```{r}
-#| eval: false
-
-f_nutrientes <- function(nutriente) {
-  nutrientes_files <- paste0(
-    "nutrientes/Escenario ",
-    c(.1, .3, .7, 1),
-    "/",
-    nutriente,
-    "_",
-    c(1, 3, 7, 10),
-    ".tif"
-  )
-
-  nutrientes_rast <- purrr::map(
-    nutrientes_files,
-    terra::rast
-  )
-
-  extract_list <- purrr::pmap(
-    list(
-      raster = nutrientes_rast,
-      vector = sf_clases,
-      producto = nutriente,
-      escenario = c(1, 3, 7, 10)
-    ),
-    f_extract
-  )
-
-  d <- list_rbind(extract_list)
-
-  write_csv(d, paste0("datos/nutrientes-", nutriente, ".csv"))
-
-  print(paste0("--", nutriente, "--"))
-}
-
-# ejecuto para todos los tipos de nutrientes
-walk(
-    c("n_total_export", "ndr_n", "ndr_p", "p_surface_export"),
-    f_nutrientes
-  )
-```
-
-La lectura de los resultados permite generar la siguiente figura, que muestra la proporción de nutrientes para cada clase, según el escenario dado.
-
-```{r}
-#| eval: false
-
-library(patchwork)
-
-nutri_files <- list.files("datos/", pattern = "nutriente", full.names = TRUE)
-nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
-
-f_gg_nutrientes <- function(nutriente) {
-  nutri_tbl |>
-  filter(prod == nutriente) |> 
-  mutate(total = sum(sum), .by = c(esc, prod)) |>
-  mutate(prop = sum / total) |>
-  mutate(esc = factor(esc)) |>
-  ggplot(aes(esc, prop)) +
-  geom_col() +
-  facet_wrap(vars(clase), scales = "free", nrow = 1) +
-  scale_y_continuous(
-    labels = scales::label_percent(accuracy = 1),
-    expand = expansion(mult = c(0, .05), add = c(0, 0))
-  ) +
-  labs(x = NULL, y = NULL, title = nutriente) +
-  theme_bw() +
-  theme(
-    aspect.ratio = 1,
-    strip.placement = "outside"
-  )
-}
-
-nutri_gg <- map(
-  c("n_total_export", "ndr_n", "ndr_p", "p_surface_export"),
-  f_gg_nutrientes
-)
-
-g <- patchwork::wrap_plots(nutri_gg, ncol = 1) &
-  theme(
-    plot.title = element_text(face = "bold", color = "red"),
-    plot.title.position = "panel",
-    strip.background = element_blank()
-  )
-
-ggsave(
-  plot = g,
-  filename = "figuras/nutrientes_escenarios_clase.png",
-  width = 25,
-  height = 28,
-  units = "cm"
-)
-```
-
-![Nutrientes por clase y escenario.](figuras/nutrientes_escenarios_clase.png)
-
-Tabla con los valores de nutrientes por clase, por escenario.
-
-```{r}
-nutri_files <- list.files("datos/", pattern = "nutriente", full.names = TRUE)
-nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
-
-nutri_tbl |> 
-  mutate(tipo = fct_reorder(tipo, sum)) |> 
-  arrange(tipo) |> 
-  pivot_wider(
-    names_from = tipo,
-    values_from = sum,
-    id_cols = c(prod, esc)
-  ) |> 
-  mutate(esc = paste0("Esc. ", esc)) |> 
-  mutate(prod = toupper(prod)) |> 
-  mutate(
-    prod = factor(
-      prod, levels = c("N_TOTAL_EXPORT", "NDR_N", "P_SURFACE_EXPORT", "NDR_P")
-    )
-  ) |> 
-  arrange(prod) |> 
-  gt(groupname_col = "prod", rowname_col = "esc") |> 
-  tab_stub_indent(indent = 5, rows = everything()) |> 
-  fmt_number(decimals = 0, dec_mark = ",", sep_mark = ".") |> 
-  tab_style(
-    locations = cells_body(),
-    style = cell_text(font = "JetBrains Mono")
-  ) |> 
-  tab_style(
-    locations = cells_row_groups(),
-    style = cell_text(weight = "bold", color = "black")
-  ) |> 
-  tab_style(
-    locations = cells_row_groups(groups = c("N_TOTAL_EXPORT", "NDR_N")),
-    style = cell_fill(color = "lightblue")
-  ) |> 
-  tab_style(
-    locations = cells_row_groups(groups = c("P_SURFACE_EXPORT", "NDR_P")),
-    style = cell_fill(color = "lightpink")
-  ) |> 
-  tab_style(
-    locations = cells_stub(),
-    style = cell_fill(color = "grey97")
-  ) |> 
-  cols_label(
-    esc = "Escenario"
-  ) |> 
-  tab_options(
-    table.width = 600
-  )
-```

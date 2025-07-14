@@ -1,0 +1,17 @@
+area,value,tipo,escenario,nutriente
+1072516528.3568463,-1,Grassland,1,n_total_export
+1534473053.3396268,0,Forest,1,n_total_export
+3410182376.356571,1,Agriculture,1,n_total_export
+279835061.7531932,2,Urban,1,n_total_export
+1069918939.1656768,-1,Grassland,2,n_total_export
+1512029465.0588918,0,Forest,2,n_total_export
+3436905107.7464995,1,Agriculture,2,n_total_export
+278153508.74766636,2,Urban,2,n_total_export
+1083020581.194403,-1,Grassland,3,n_total_export
+1499881714.650026,0,Forest,3,n_total_export
+3437081571.353315,1,Agriculture,3,n_total_export
+277023153.5373097,2,Urban,3,n_total_export
+1082067776.4271698,-1,Grassland,4,n_total_export
+1483435204.2861278,0,Forest,4,n_total_export
+3451586660.3240623,1,Agriculture,4,n_total_export
+279917379.6927048,2,Urban,4,n_total_export

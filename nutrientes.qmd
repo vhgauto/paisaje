@@ -1103,7 +1103,9 @@ read_tsv("datos/df_custom2.tsv", show_col_types = FALSE) |>
 
 # Aporte de nutrientes por clase
 
-Se calcularon la cantidad de nutrientes (fósforo y nitrógeno) generados por cada clase, según el escenario dado.
+Se calcularon la cantidad de nutrientes (fósforo y nitrógeno) generados por cada clase, según el escenario dado. El análisis se dividió en cantidad de nutrientes y en proporción respecto de la superficie, por clase.
+
+## Cantidad de nutrientes
 
 Inicialmente se seleccionan las dependencias del terreno 0.1, 0.3, 0.7 y 1. Estos escenarios contienen diferentes distribuciones de clases, en formato ráster.
 
@@ -1217,16 +1219,14 @@ f_nutrientes <- function(nutriente) {
 
 # ejecuto para todos los tipos de nutrientes
 walk(
-    c("n_total_export", "ndr_n", "ndr_p", "p_surface_export"),
-    f_nutrientes
-  )
+  c("n_total_export", "ndr_n", "ndr_p", "p_surface_export"),
+  f_nutrientes
+)
 ```
 
 La lectura de los resultados permite generar la siguiente figura, que muestra la proporción de nutrientes para cada clase, según el escenario dado.
 
 ```{r}
-#| eval: false
-
 nutri_files <- list.files("datos/", pattern = "nutriente", full.names = TRUE)
 nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
 
@@ -1252,7 +1252,6 @@ f_gg_nutrientes <- function(nutriente) {
       aspect.ratio = 1,
       strip.placement = "outside",
       strip.text = element_text(face = "bold"),
-      panel.background = element_blank(),
       panel.grid.minor = element_blank(),
       panel.grid.major.x = element_blank(),
       panel.grid.major.y = element_line(color = "grey30", linewidth = .1),
@@ -1273,7 +1272,9 @@ g3 <- patchwork::wrap_plots(nutri_gg, ncol = 1) &
   theme(
     plot.title = element_text(face = "bold", color = "#8E063B"),
     plot.title.position = "panel",
-    strip.background = element_blank()
+    strip.background = element_blank(),
+    plot.background = element_blank(),
+    panel.background = element_blank()
   )
 
 ggsave(
@@ -1365,3 +1366,314 @@ nutri_tbl |>
   ) |> 
   as_raw_html()
 ```
+
+## Relación respecto del área
+
+Se leyeron los ráster de acuerdo al escenario y el nutriente, extrayendo el área asociada a cada clase. Para ello se creó una función personalizada.
+
+```{r}
+escenarios_v <- c(.1, .3, .7, 1)
+escenarios10_v <- c(1, 3, 7, 10)
+
+f_area_lista <- function(id, nutriente) {
+  raster <- paste0(
+    "nutrientes/Escenario ",
+    escenarios_v[id],
+    "/",
+    nutriente,
+    "_",
+    escenarios10_v[id],
+    ".tif"
+  ) |>
+    rast()
+
+  vector <- sf_clases[[id]]
+
+  exactextractr::exact_extract(
+    x = raster,
+    y = vector,
+    force_df = TRUE,
+    include_area = TRUE,
+    max_cells_in_memory = 230000000
+  )
+}
+```
+
+Para cada escenario y tipo de nutriente se obtuvo el área total asignada a cada clase.
+
+```{r}
+f_area_tbl <- function(id, nutriente) {
+  lista <- f_area_lista(id = id, nutriente = nutriente)
+
+  l <- purrr::map(
+    1:4,
+    \(x) {
+      lista[[x]] |>
+        as_tibble() |>
+        drop_na() |>
+        reframe(
+          area = sum(coverage_fraction * area)
+        ) |>
+        mutate(value = c(-1:2)[x])
+    }
+  )
+
+  list_rbind(l) |>
+    full_join(d_r, by = join_by(value)) |>
+    select(-col) |>
+    mutate(
+      escenario = id,
+      nutriente = nutriente
+    )
+}
+```
+
+Se ejecutaron las funciones personalizadas previas, generando `.csv` por nutriente y almacenando para lecturas posteriores.
+
+```{r}
+f_area_csv <- function(nutriente) {
+  df <- purrr::map(
+    1:4,
+    ~ f_area_tbl(id = .x, nutriente = nutriente)
+  )
+
+  list_rbind(df) |>
+    write_csv(paste0("datos/area-clase-", nutriente, ".csv"))
+
+  print(paste0("---Datos ", nutriente, " almacenados---"))
+}
+
+# {
+#   ti <- Sys.time()
+#   purrr::walk(
+#     c("n_total_export", "ndr_n", "ndr_p", "p_surface_export"),
+#     f_area_csv
+#   )
+#   tf <- Sys.time()
+#   delta <- tf - ti
+#   # 12M 20S
+# }
+```
+
+Dado que cada escenario generado conserva la misma proporción de áreas por clase, se calcula para un único vector, almacenando los resultados.
+
+```{r}
+#| eval: false
+
+area_clase <- sf::st_area(sf_clases[[1]]) |>
+  as.numeric()
+
+area_clase_tbl <- tibble(
+  area = area_clase,
+  value = -1:2
+) |>
+  full_join(d_r, by = join_by(value)) |>
+  mutate(area_prop = area / sum(area))
+
+write_csv(area_clase_tbl, "datos/area_por_clase.csv")
+```
+
+Por cada escenario y clase, se compararon las proporciones respecto del área de la clase.
+
+```{r}
+area_clase_csv <- list.files(
+  path = "datos/",
+  pattern = "area-clase-",
+  full.names = TRUE
+)
+
+area_clase_tbl <- read_csv("datos/area_por_clase.csv", show_col_types = FALSE)
+
+f_gg_area <- function(i_nutriente) {
+  read_csv(area_clase_csv, show_col_types = FALSE) |>
+    mutate(
+      esc = case_match(
+        escenario,
+        1 ~ 1,
+        2 ~ 3,
+        3 ~ 7,
+        4 ~ 10
+      )
+    ) |>
+    mutate(esc = factor(esc)) |>
+    mutate(
+      area_tot = sum(area),
+      .by = c(esc, nutriente)
+    ) |>
+    mutate(
+      porcentaje = area / area_tot
+    ) |>
+    filter(nutriente == i_nutriente) |>
+    ggplot(aes(esc, porcentaje)) +
+    geom_hline(
+      data = area_clase_tbl, aes(yintercept = area_prop),
+      color = "grey30", linetype = 2, linewidth = 1
+    ) +
+    geom_line(aes(group = tipo), color = "#8E063B") +
+    geom_point(color = "#8E063B") +
+    facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+    scale_y_continuous(
+      labels = scales::label_percent(
+        accuracy = .1, big.mark = ".", decimal.mark = ","
+      )
+    ) +
+    labs(x = NULL, y = NULL, title = toupper(i_nutriente)) +
+    theme_bw(base_family = "Lato", base_size = 13) +
+    theme(
+      aspect.ratio = 1,
+      plot.background = element_blank(),
+      strip.placement = "outside",
+      strip.text = element_text(face = "bold"),
+      panel.background = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_line(color = "grey30", linewidth = .1),
+      axis.ticks = element_blank(),
+      axis.text = element_text(color = "black"),
+      axis.text.x = element_text(margin = margin(t = 0)),
+      axis.text.y = element_text(margin = margin(r = 0)),
+      panel.spacing.x = unit(.7, "cm")
+    )
+}
+
+l_gg_area <- purrr::map(
+  c("n_total_export", "ndr_n", "ndr_p", "p_surface_export"),
+  f_gg_area
+)
+
+g4 <- wrap_plots(l_gg_area, ncol = 1) &
+  theme(
+    plot.title = element_text(face = "bold", color = "#8E063B"),
+    plot.title.position = "panel",
+    strip.background = element_blank(),
+    plot.background = element_blank(),
+    panel.background = element_blank()
+  )
+
+ggsave(
+  plot = g4,
+  filename = "figuras/nutrientes_porcentaje_clase.png",
+  width = 25,
+  height = 29,
+  units = "cm"
+)
+
+```
+
+::: {.callout-note appearance="simple" collapse=true icon=false title="Mostrar figura"}
+
+![Porcentaje de nutrientes de cada clase, por escenario. En cada panel, la línea de trazos horizontal indica el porcentaje de superficie asociado a cada clase.](figuras/nutrientes_porcentaje_clase.png)
+
+:::
+
+Tabla con las proporciones de nutrientes, por clase y escenario. A la derecha se muestran las proporciones de superficie de cada clase.
+
+```{r}
+area_ref_tbl <- area_clase_tbl |> 
+  select(tipo, ref = area_prop)
+
+area_gt_tbl <- read_csv(area_clase_csv, show_col_types = FALSE) |>
+  mutate(
+    esc = case_match(
+      escenario,
+      1 ~ 1,
+      2 ~ 3,
+      3 ~ 7,
+      4 ~ 10
+    )
+  ) |>
+  mutate(esc = paste0("Esc. ", esc)) |> 
+  mutate(esc = factor(esc)) |>
+  mutate(
+    area_tot = sum(area),
+    .by = c(esc, nutriente)
+  ) |>
+  mutate(
+    porcentaje = area / area_tot
+  ) |> 
+  select(-area_tot) |> 
+  pivot_wider(
+    names_from = esc,
+    values_from = porcentaje,
+    id_cols = c(nutriente, tipo)
+  ) |> 
+  full_join(area_ref_tbl, by = join_by(tipo)) |> 
+  mutate(nutriente = toupper(nutriente)) |> 
+  mutate(
+    nutriente = factor(
+      nutriente, levels = c(
+        "N_TOTAL_EXPORT", "NDR_N", "P_SURFACE_EXPORT", "NDR_P"
+      )
+    )
+  )
+
+gt(area_gt_tbl, groupname_col = "nutriente", rowname_col = "tipo") |> 
+  tab_stub_indent(indent = 5, rows = everything()) |> 
+  fmt_percent(
+    decimals = 1, sep_mark = ".", dec_mark = ","
+  ) |> 
+  tab_style(
+    locations = cells_body(),
+    style = cell_text(font = "JetBrains Mono")
+  ) |> 
+  tab_style(
+    locations = cells_row_groups(),
+    style = cell_text(weight = "bold", color = "black")
+  ) |> 
+  tab_style(
+    locations = cells_body(columns = "ref"),
+    style = cell_fill(color = "grey97")
+  ) |> 
+  tab_style(
+    locations = cells_column_labels(columns = "ref"),
+    style = cell_fill(color = "grey97")
+  ) |> 
+  tab_style(
+    locations = cells_row_groups(groups = c("N_TOTAL_EXPORT", "NDR_N")),
+    style = cell_fill(color = "#FFF8FB")
+  ) |> 
+  tab_style(
+    locations = cells_row_groups(groups = c("P_SURFACE_EXPORT", "NDR_P")),
+    style = cell_fill(color = "#F1F9E5")
+  ) |> 
+  tab_style(
+    locations = cells_stub(),
+    style = cell_fill(color = "grey97")
+  ) |> 
+  tab_spanner(
+    label = "Escenario",
+    columns = starts_with("esc")
+  ) |> 
+  gt::cols_width(ref ~ pct(15)) |> 
+  tab_style(
+    style = cell_text(
+      weight = "bold", decorate = "underline", color = "#8E063B"
+    ),
+    locations = purrr::map(
+      1:nrow(area_gt_tbl),
+      \(fila) {
+        cells_body(
+          columns = which(area_gt_tbl[fila, 3:6] > area_gt_tbl$ref[fila])+2,
+          rows = fila
+        )
+      }
+    )
+  ) |> 
+  cols_label(
+    ref = html("<i>% de la clase</i>")
+  ) |> 
+  tab_footnote(
+    footnote = html(
+      "Texto destacado indica que en ese escenario, el nutriente asociado 
+      a la clase es <b style='font-family: JetBrains Mono; color:
+      #8E063B'>mayor</b> al porcentaje de superficie correspondiente."
+    )
+  ) |> 
+  tab_options(
+    table.width = 650,
+    table.border.top.style = "hidden"
+  ) |> 
+  as_raw_html()
+```
+
+En todos los casos, `Grassland` y `Urban` presentan un porcentaje del total de nutrientes (ligeramente) superior a su superficie ocupada.
+

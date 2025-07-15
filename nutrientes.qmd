@@ -531,6 +531,7 @@ g1 <- m_clase |>
     panel.grid.minor = element_blank(),
     panel.grid.major = element_line(linewidth = .1, color = "grey"),
     legend.position = "top",
+    legend.background = element_blank(),
     legend.text = element_text(margin = margin(r = 10)),
     axis.text = element_text(size = rel(.6), color = "black"),
     axis.ticks = element_blank(),
@@ -1129,7 +1130,7 @@ clases_vect <- purrr::map(
   clases_rast,
   \(x) {
     terra::as.polygons(x) |>
-      project(crs(r))
+      project("EPSG:32720")
   }
 )
 
@@ -1484,55 +1485,48 @@ area_clase_csv <- list.files(
 
 area_clase_tbl <- read_csv("datos/area_por_clase.csv", show_col_types = FALSE)
 
+nutri_files <- list.files("datos/", pattern = "nutriente", full.names = TRUE)
+nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
+
 f_gg_area <- function(i_nutriente) {
-  read_csv(area_clase_csv, show_col_types = FALSE) |>
-    mutate(
-      esc = case_match(
-        escenario,
-        1 ~ 1,
-        2 ~ 3,
-        3 ~ 7,
-        4 ~ 10
-      )
-    ) |>
-    mutate(esc = factor(esc)) |>
-    mutate(
-      area_tot = sum(area),
-      .by = c(esc, nutriente)
-    ) |>
-    mutate(
-      porcentaje = area / area_tot
-    ) |>
-    filter(nutriente == i_nutriente) |>
-    ggplot(aes(esc, porcentaje)) +
-    geom_hline(
-      data = area_clase_tbl, aes(yintercept = area_prop),
-      color = "grey30", linetype = 2, linewidth = 1
-    ) +
-    geom_line(aes(group = tipo), color = "#8E063B") +
-    geom_point(color = "#8E063B") +
-    facet_wrap(vars(tipo), nrow = 1, scales = "free") +
-    scale_y_continuous(
-      labels = scales::label_percent(
-        accuracy = .1, big.mark = ".", decimal.mark = ","
-      )
-    ) +
-    labs(x = NULL, y = NULL, title = toupper(i_nutriente)) +
-    theme_bw(base_family = "Lato", base_size = 13) +
-    theme(
-      aspect.ratio = 1,
-      plot.background = element_blank(),
-      strip.placement = "outside",
-      strip.text = element_text(face = "bold"),
-      panel.background = element_blank(),
-      panel.grid.minor = element_blank(),
-      panel.grid.major = element_line(color = "grey30", linewidth = .1),
-      axis.ticks = element_blank(),
-      axis.text = element_text(color = "black"),
-      axis.text.x = element_text(margin = margin(t = 0)),
-      axis.text.y = element_text(margin = margin(r = 0)),
-      panel.spacing.x = unit(.7, "cm")
+  nutri_tbl |> 
+  mutate(tipo = fct_reorder(tipo, sum)) |> 
+  mutate(
+    porcentaje = sum/sum(sum), .by = c(esc, prod)
+  ) |> 
+  arrange(tipo) |> 
+  mutate(esc = factor(esc)) |> 
+  mutate(fraccion = sum/sum(sum), .by = c(esc, prod)) |> 
+  filter(prod == i_nutriente) |> 
+  ggplot(aes(esc, fraccion)) +
+  geom_hline(
+    data = area_clase_tbl, aes(yintercept = area_prop), alpha = .8,
+    color = "#8E063B", linetype = 2, linewidth = 1
+  ) +
+  geom_line(aes(group = tipo), color = "#8E063B") +
+  geom_point(color = "#8E063B") +
+  facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+  scale_y_continuous(
+    labels = scales::label_percent(
+      accuracy = .1, big.mark = ".", decimal.mark = ","
     )
+  ) +
+  labs(x = NULL, y = NULL, title = toupper(i_nutriente)) +
+  theme_bw(base_family = "Lato", base_size = 13) +
+  theme(
+    aspect.ratio = 1,
+    plot.background = element_blank(),
+    strip.placement = "outside",
+    strip.text = element_text(face = "bold"),
+    panel.background = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(color = "grey30", linewidth = .1),
+    axis.ticks = element_blank(),
+    axis.text = element_text(color = "black"),
+    axis.text.x = element_text(margin = margin(t = 0)),
+    axis.text.y = element_text(margin = margin(r = 0)),
+    panel.spacing.x = unit(.7, "cm")
+  )
 }
 
 l_gg_area <- purrr::map(
@@ -1571,42 +1565,29 @@ Tabla con las proporciones de nutrientes, por clase y escenario. A la derecha se
 area_ref_tbl <- area_clase_tbl |> 
   select(tipo, ref = area_prop)
 
-area_gt_tbl <- read_csv(area_clase_csv, show_col_types = FALSE) |>
+area_gt_tbl <- nutri_tbl |> 
+  mutate(tipo = fct_reorder(tipo, sum)) |> 
   mutate(
-    esc = case_match(
-      escenario,
-      1 ~ 1,
-      2 ~ 3,
-      3 ~ 7,
-      4 ~ 10
-    )
-  ) |>
+    fraccion = sum/sum(sum), .by = c(esc, prod)
+  ) |> 
+  arrange(tipo) |> 
   mutate(esc = paste0("Esc. ", esc)) |> 
   mutate(esc = factor(esc)) |>
-  mutate(
-    area_tot = sum(area),
-    .by = c(esc, nutriente)
-  ) |>
-  mutate(
-    porcentaje = area / area_tot
-  ) |> 
-  select(-area_tot) |> 
   pivot_wider(
     names_from = esc,
-    values_from = porcentaje,
-    id_cols = c(nutriente, tipo)
+    values_from = fraccion,
+    id_cols = c(prod, tipo)
   ) |> 
-  full_join(area_ref_tbl, by = join_by(tipo)) |> 
-  mutate(nutriente = toupper(nutriente)) |> 
+  mutate(prod = toupper(prod)) |> 
   mutate(
-    nutriente = factor(
-      nutriente, levels = c(
-        "N_TOTAL_EXPORT", "NDR_N", "P_SURFACE_EXPORT", "NDR_P"
-      )
+    prod = factor(
+      prod, levels = c("N_TOTAL_EXPORT", "NDR_N", "P_SURFACE_EXPORT", "NDR_P")
     )
-  )
+  ) |> 
+  arrange(prod) |> 
+  full_join(area_ref_tbl, by = join_by(tipo))
 
-gt(area_gt_tbl, groupname_col = "nutriente", rowname_col = "tipo") |> 
+gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |> 
   tab_stub_indent(indent = 5, rows = everything()) |> 
   fmt_percent(
     decimals = 1, sep_mark = ".", dec_mark = ","
@@ -1659,13 +1640,14 @@ gt(area_gt_tbl, groupname_col = "nutriente", rowname_col = "tipo") |>
     )
   ) |> 
   cols_label(
-    ref = html("<i>% de la clase</i>")
+    ref = html("<i>% superficie<br>de la clase</i>")
   ) |> 
   tab_footnote(
     footnote = html(
-      "Texto destacado indica que en ese escenario, el nutriente asociado 
-      a la clase es <b style='font-family: JetBrains Mono; color:
-      #8E063B'>mayor</b> al porcentaje de superficie correspondiente."
+      "<b style='font-family: JetBrains Mono; color: #8E063B'>Texto 
+      destacado</b> indica que en ese escenario, el nutriente asociado 
+      a la clase es <b><u>mayor</u></b> al porcentaje de superficie
+      correspondiente."
     )
   ) |> 
   tab_options(
@@ -1675,5 +1657,6 @@ gt(area_gt_tbl, groupname_col = "nutriente", rowname_col = "tipo") |>
   as_raw_html()
 ```
 
-En todos los casos, `Grassland` y `Urban` presentan un porcentaje del total de nutrientes (ligeramente) superior a su superficie ocupada.
+En todos los casos, `Urban` y `Agriculture` presentan un porcentaje del total de nutrientes superior a su superficie ocupada, excepto para `N_TOTAL_EXPORT`.
 
+Las clases `Grassland` y `Forest`, en todos los nutrientes, generaron menor proporción del total, respecto del área ocupada correspondiente.

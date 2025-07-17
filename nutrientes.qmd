@@ -298,15 +298,9 @@ Esto puede solucionarse eligiendo únicamente las clases de interés.
 
 Para el cálculo de las métricas se utiliza el paquete [`{landscapemetrics}`](https://r-spatialecology.github.io/landscapemetrics/).
 
-Las métricas se dividen en parche, clase y paisaje. A continuación se muestran los resultados para los escenarios considerando todas las dependencias del terreno.
-
-## Cálculo de métricas a nivel de <span style='text-decoration: underline;'>clase</span>
-
-Las métricas del paisaje a nivel de clase devuelven un valor asociado a cada categoría del ráster de interés.
+Las métricas se dividen clase y paisaje. A continuación se muestran los resultados para las clases originales y luego para los diferentes escenarios, considerando todas las dependencias del terreno.
 
 ```{r}
-#| echo: false
-
 funcion_generica_clase <- function(raster, funcion) {
   i <- which(funciones_clase == funcion)
   print(paste0(i, "/", length(funciones_clase)))
@@ -322,8 +316,194 @@ funciones_clase <- funciones_clase[!str_detect(funciones_clase, "_cv|_sd")]
 
 # elimino: 'lsm_c_enn_mn'
 funciones_clase <- funciones_clase[funciones_clase != "lsm_c_enn_mn"]
-
 # 32 funciones
+
+funcion_generica_paisaje <- function(raster, funcion) {
+  i <- which(funciones_paisaje == funcion)
+  print(paste0(i, "/", length(funciones_paisaje)))
+  print(funcion)
+  ff <- eval(str2lang(funcion))
+  ff(raster)
+}
+
+funciones_paisaje <- ls("package:landscapemetrics")[
+  str_detect(ls("package:landscapemetrics"), "lsm_l")
+]
+funciones_paisaje <- funciones_paisaje[!str_detect(funciones_paisaje, "_cv|_sd")]
+
+funciones_paisaje <- funciones_paisaje[funciones_paisaje != "lsm_l_enn_mn"]
+# 43 funciones
+
+f_contenido_funcion <- function(x) {
+  tools::Rd_db("landscapemetrics")[[paste0("lsm_c_", x, ".Rd")]] |> 
+    as.character()
+}
+
+f_contenido_funcion2 <- function(x) {
+  tools::Rd_db("landscapemetrics")[[paste0("lsm_l_", x, ".Rd")]] |> 
+    as.character()
+}
+
+# funciones auxiliares para las tablas con {gt}
+f_titulo_funcion <- function(x) {
+  if (str_count(x, "\\(") == 1) {
+    r <- str_trim(str_replace(x, " \\(.*?\\)", ""))
+  } #else {
+  #   r <- str_trim(str_extract(x, "^.*?\\(.*?\\)[^()]*")) # OK
+  # }
+  
+  if (str_count(x, "\\(") == 2) {
+    r <- str_trim(str_extract(x, "^.*?\\(.*?\\)[^()]*"))
+  }
+  
+  if (str_count(x, "\\(") == 0) {
+    r <- str_trim(x)
+  }
+  
+  return(r)
+}
+
+f_eq <- function(x) {
+  id_eq <- which(x == "\\deqn") + 3
+  x[id_eq]
+}
+```
+
+## Métricas de <u>clase</u> y <u>paisaje</u> para uso de suelo
+
+```{r}
+#| eval: false
+
+f_loop_clase_lulc <- function() {
+  map2(
+    .x = r,
+    .y = funciones_clase,
+    ~funcion_generica_clase(raster = .x, funcion = .y),
+    .progress = TRUE
+  ) |>
+    list_rbind()
+}
+
+metrica_clase_lulc <- f_loop_clase_lulc() # 53M
+write_csv(metrica_clase_lulc, "datos/metrica_clase_lulc.csv")
+
+f_loop_paisaje_lulc <- function() {
+  map2(
+    .x = r,
+    .y = funciones_paisaje,
+    ~funcion_generica_paisaje(raster = .x, funcion = .y),
+    .progress = TRUE
+  ) |>
+    list_rbind()
+}
+
+metrica_paisaje_lulc <- f_loop_paisaje_lulc() # 54M
+write_csv(metrica_paisaje_lulc, "datos/metrica_paisaje_lulc.csv")
+```
+
+Tabla con métricas a nivel de <b><u>clase</u></b> obteniendo un valor para cada clase de uso del suelo.
+
+```{r}
+#| column: page
+
+read_csv("datos/metrica_clase_lulc.csv", show_col_types = FALSE) |> 
+  rename(
+    n_clase = class
+  ) |> 
+  full_join(
+    rename(d, n_clase = value),
+    by = join_by(n_clase)
+  ) |>
+  pivot_wider(
+    names_from = tipo,
+    values_from = value,
+    id_cols = c(layer, metric)
+  ) |> 
+  mutate(
+    txt = map(metric, f_contenido_funcion)
+  ) |> 
+  mutate(
+    titulo = map_chr(txt, ~.x[16])
+  ) |> 
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+  mutate(
+    link = paste0(
+      "https://r-spatialecology.github.io/landscapemetrics/reference/lsm_c_",
+      metric,
+      ".html"
+    )
+  ) |> 
+  mutate(
+    titulo = glue::glue("[{titulo}]({link})")
+  ) |> 
+  select(Métrica = titulo, Forest:`Water body`) |> 
+  arrange(Métrica) |> 
+  gt() |> 
+  fmt_auto(
+    columns = Forest:`Water body`,
+    locale = "es"
+  ) |> 
+  tab_style(
+    locations = cells_body(columns = Forest:`Water body`),
+    style = cell_text(font = "JetBrains Mono", color = "black")
+  ) |> 
+  tab_style(
+    locations = cells_body(columns = c(Métrica)),
+    style = cell_text(align = "left")
+  ) |> 
+  cols_label(
+    `Sparse vegetation - bare soil` = html("Sparse vegetation<br>Bare soil")
+  ) |> 
+  fmt_url(columns = Métrica, color = "#8E063B") |> 
+  as_raw_html()
+```
+
+Tabla con métricas a nivel de <b><u>paisaje</u></b> para todo el ráster de uso del suelo.
+
+```{r}
+read_csv("datos/metrica_paisaje_lulc.csv", show_col_types = FALSE) |> 
+  mutate(
+    txt = map(metric, f_contenido_funcion2)
+  ) |> 
+  mutate(
+    titulo = map_chr(txt, ~.x[16])
+  ) |> 
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+  mutate(
+    link = paste0(
+      "https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_",
+      metric,
+      ".html"
+    )
+  ) |> 
+  mutate(
+    titulo = glue::glue("[{titulo}]({link})")
+  ) |> 
+  select(Métrica = titulo, Valor = value) |> 
+  arrange(Métrica) |> 
+  gt() |> 
+  fmt_auto(
+    columns = Valor,
+    locale = "es"
+  ) |>
+  tab_style(
+    locations = cells_body(columns = Valor),
+    style = cell_text(font = "JetBrains Mono", color = "black")
+  ) |> 
+  tab_style(
+    locations = cells_body(columns = c(Métrica)),
+    style = cell_text(align = "left")
+  ) |> 
+  fmt_url(columns = Métrica, color = "#8E063B") |> 
+  as_raw_html()
+```
+
+## Métricas a nivel de <u>clase</u>
+
+Las métricas del paisaje a nivel de clase devuelven un valor asociado a cada categoría del ráster de interés.
+
+```{r}
+#| echo: false
 
 f_loop_clase <- function(z, dep) {
   map2(
@@ -357,7 +537,7 @@ metricas_csv <- list.files(
   path = "datos/",
   pattern = "_clase_",
   full.names = TRUE
-)[1:10]
+)[2:11]
 
 m_clase <- read_csv(metricas_csv, show_col_types = FALSE) |> 
   rename(clase = class) |> 
@@ -403,34 +583,6 @@ m_clase <- mutate(m_clase, metric = fct(metric, levels = levels(metric_orden)))
 ```{r}
 #| tbl-cap: Métricas de clase independientes de la dependencia del terreno.
 
-f_contenido_funcion <- function(x) {
-  tools::Rd_db("landscapemetrics")[[paste0("lsm_c_", x, ".Rd")]] |> 
-    as.character()
-}
-
-f_titulo_funcion <- function(x) {
-  if (str_count(x, "\\(") == 1) {
-    r <- str_trim(str_replace(x, " \\(.*?\\)", ""))
-  } #else {
-  #   r <- str_trim(str_extract(x, "^.*?\\(.*?\\)[^()]*")) # OK
-  # }
-  
-  if (str_count(x, "\\(") == 2) {
-    r <- str_trim(str_extract(x, "^.*?\\(.*?\\)[^()]*"))
-  }
-  
-  if (str_count(x, "\\(") == 0) {
-    r <- str_trim(x)
-  }
-  
-  return(r)
-}
-
-f_eq <- function(x) {
-  id_eq <- which(x == "\\deqn") + 3
-  x[id_eq]
-}
-
 m_clase |>
   filter(as.numeric(metric) <= 12) |>
   reframe(
@@ -462,7 +614,8 @@ m_clase |>
   mutate(
     titulo = glue::glue("[{titulo}]({link})")
   ) |> 
-  select(Métrica = titulo, Grassland, Forest, Agriculture, Urban) |> 
+  select(Métrica = titulo, Grassland, Forest, Agriculture, Urban) |>
+  arrange(Métrica) |> 
   gt() |> 
   fmt_auto(
     columns = c(Grassland, Forest, Agriculture, Urban),
@@ -554,27 +707,10 @@ ggsave(
 ![Métricas de clase variables con la dependencia del terreno.](figuras/metricas_clase_dif.png)
 :::
 
-## Cálculo de métricas a nivel de <span style='text-decoration: underline;'>paisaje</span>
+## Métricas a nivel de <u>paisaje</u>
 
 ```{r}
 #| echo: false
-
-funcion_generica_paisaje <- function(raster, funcion) {
-  i <- which(funciones_paisaje == funcion)
-  print(paste0(i, "/", length(funciones_paisaje)))
-  print(funcion)
-  ff <- eval(str2lang(funcion))
-  ff(raster)
-}
-
-funciones_paisaje <- ls("package:landscapemetrics")[
-  str_detect(ls("package:landscapemetrics"), "lsm_l")
-]
-funciones_paisaje <- funciones_paisaje[!str_detect(funciones_paisaje, "_cv|_sd")]
-
-funciones_paisaje <- funciones_paisaje[funciones_paisaje != "lsm_l_enn_mn"]
-
-# 43 funciones
 
 f_loop_paisaje <- function(z, dep) {
   map2(
@@ -610,7 +746,7 @@ metricas2_csv <- list.files(
   path = "datos/",
   pattern = "_paisaje_",
   full.names = TRUE
-)[1:10]
+)[2:11]
 
 m_paisaje <- read_csv(metricas2_csv, show_col_types = FALSE) |> 
   select(metric, valor = value, dependencia_terreno) |> 
@@ -643,11 +779,6 @@ m_paisaje <- mutate(m_paisaje, metric = fct(metric, levels = levels(metric_orden
 ```{r}
 #| tbl-cap: Métricas de paisaje independientes de la dependencia del terreno.
 
-f_contenido_funcion2 <- function(x) {
-  tools::Rd_db("landscapemetrics")[[paste0("lsm_l_", x, ".Rd")]] |> 
-    as.character()
-}
-
 m_paisaje |>
   filter(as.numeric(metric) <= 10) |>
   reframe(
@@ -675,7 +806,8 @@ m_paisaje |>
   mutate(
     titulo = glue::glue("[{titulo}]({link})")
   ) |> 
-  select(Métrica = titulo, Valor = v) |> 
+  select(Métrica = titulo, Valor = v) |>
+  arrange(Métrica) |> 
   gt() |> 
   fmt_auto(
     columns = Valor,

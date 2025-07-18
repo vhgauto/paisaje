@@ -385,7 +385,11 @@ f_loop_clase_lulc <- function() {
 }
 
 metrica_clase_lulc <- f_loop_clase_lulc() # 53M
-write_csv(metrica_clase_lulc, "datos/metrica_clase_lulc.csv")
+metrica_clase_lulc |> 
+  rename(clase = class) |> 
+  full_join(rename(d, clase = value), by = join_by(clase)) |> 
+  select(-c(col, id, level, layer)) |> 
+  write_csv("datos/metrica_clase_lulc.csv")
 
 f_loop_paisaje_lulc <- function() {
   map2(
@@ -398,7 +402,9 @@ f_loop_paisaje_lulc <- function() {
 }
 
 metrica_paisaje_lulc <- f_loop_paisaje_lulc() # 54M
-write_csv(metrica_paisaje_lulc, "datos/metrica_paisaje_lulc.csv")
+metrica_paisaje_lulc |> 
+  select(metric, value) |> 
+  write_csv("datos/metrica_paisaje_lulc.csv")
 ```
 
 Tabla con métricas a nivel de <b><u>clase</u></b> obteniendo un valor para cada clase de uso del suelo.
@@ -407,17 +413,10 @@ Tabla con métricas a nivel de <b><u>clase</u></b> obteniendo un valor para cada
 #| column: page
 
 read_csv("datos/metrica_clase_lulc.csv", show_col_types = FALSE) |> 
-  rename(
-    n_clase = class
-  ) |> 
-  full_join(
-    rename(d, n_clase = value),
-    by = join_by(n_clase)
-  ) |>
   pivot_wider(
     names_from = tipo,
     values_from = value,
-    id_cols = c(layer, metric)
+    id_cols = metric
   ) |> 
   mutate(
     txt = map(metric, f_contenido_funcion)
@@ -455,6 +454,14 @@ read_csv("datos/metrica_clase_lulc.csv", show_col_types = FALSE) |>
     `Sparse vegetation - bare soil` = html("Sparse vegetation<br>Bare soil")
   ) |> 
   fmt_url(columns = Métrica, color = "#8E063B") |> 
+  tab_source_note(
+    source_note = md(
+      "[Datos (.csv)](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/metrica_clase_lulc.csv) disponibles para su descarga"
+    )
+  ) |> 
+  tab_options(
+    table.background.color = "transparent"
+  ) |> 
   as_raw_html()
 ```
 
@@ -495,6 +502,14 @@ read_csv("datos/metrica_paisaje_lulc.csv", show_col_types = FALSE) |>
     style = cell_text(align = "left")
   ) |> 
   fmt_url(columns = Métrica, color = "#8E063B") |> 
+  tab_source_note(
+    source_note = md(
+      "[Datos (.csv)](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/metrica_paisaje_lulc.csv) disponibles para su descarga"
+    )
+  ) |> 
+  tab_options(
+    table.background.color = "transparent"
+  ) |> 
   as_raw_html()
 ```
 
@@ -630,6 +645,14 @@ m_clase |>
     style = cell_text(align = "left")
   ) |> 
   fmt_url(columns = Métrica, color = "#8E063B") |>
+  tab_source_note(
+    source_note = md(
+      "[Datos (.csv)](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/métricas_X_cla.csv) disponibles para su descarga"
+    )
+  ) |> 
+  tab_options(
+    table.background.color = "transparent"
+  ) |> 
   as_raw_html()
 ```
 
@@ -822,6 +845,14 @@ m_paisaje |>
     style = cell_text(align = "left")
   ) |> 
   fmt_url(columns = Métrica, color = "#8E063B") |>
+  tab_source_note(
+    source_note = md(
+      "[Datos (.csv)](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/métricas_X_pai.csv) disponibles para su descarga"
+    )
+  ) |> 
+  tab_options(
+    table.background.color = "transparent"
+  ) |> 
   as_raw_html()
 ```
 
@@ -924,7 +955,10 @@ tibble(
     locations = cells_body(columns = -Clase),
     style = cell_text(font = "JetBrains Mono", color = "black")
   ) |>
-  tab_header(title = md("**Caso I**"))
+  tab_header(title = md("**Caso I**")) |> 
+  tab_options(
+    table.background.color = "transparent"
+  )
 ```
 
 :::
@@ -951,7 +985,10 @@ tibble(
     locations = cells_body(columns = -Clase),
     style = cell_text(font = "JetBrains Mono", color = "black")
   ) |>
-  tab_header(title = md("**Caso II**"))
+  tab_header(title = md("**Caso II**")) |>
+  tab_options(
+    table.background.color = "transparent"
+  )
 ```
 
 :::
@@ -1183,7 +1220,10 @@ read_tsv("datos/df_custom.tsv", show_col_types = FALSE) |>
     decimals = 1,
     sep_mark = "."
   ) |>
-  tab_header(title = md("**Caso I**"))
+  tab_header(title = md("**Caso I**")) |> 
+  tab_options(
+    table.background.color = "transparent"
+  )
 ```
 
 :::
@@ -1227,7 +1267,10 @@ read_tsv("datos/df_custom2.tsv", show_col_types = FALSE) |>
     decimals = 1,
     sep_mark = "."
   ) |>
-  tab_header(title = md("**Caso II**"))
+  tab_header(title = md("**Caso II**")) |> 
+  tab_options(
+    table.background.color = "transparent"
+  )
 ```
 
 :::

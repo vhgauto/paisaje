@@ -75,6 +75,7 @@ Los paquetes usados son los siguientes:
 #| code-fold: false
 
 library(tidyverse)
+library(glue)
 library(gt)
 library(landscapemetrics)
 library(NLMR)
@@ -369,7 +370,7 @@ f_eq <- function(x) {
 }
 ```
 
-## Métricas de <u>clase</u> y <u>paisaje</u> para uso de suelo
+## Métricas de <u>clase</u> y <u>paisaje</u> para LULC
 
 ```{r}
 #| eval: false
@@ -456,7 +457,7 @@ read_csv("datos/metrica_clase_lulc.csv", show_col_types = FALSE) |>
   fmt_url(columns = Métrica, color = "#8E063B") |> 
   tab_source_note(
     source_note = md(
-      "[Datos (.csv)](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/metrica_clase_lulc.csv) disponibles para su descarga"
+      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/metrica_clase_lulc.csv)")
     )
   ) |> 
   tab_options(
@@ -504,7 +505,7 @@ read_csv("datos/metrica_paisaje_lulc.csv", show_col_types = FALSE) |>
   fmt_url(columns = Métrica, color = "#8E063B") |> 
   tab_source_note(
     source_note = md(
-      "[Datos (.csv)](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/metrica_paisaje_lulc.csv) disponibles para su descarga"
+      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/metrica_paisaje_lulc.csv)")
     )
   ) |> 
   tab_options(
@@ -550,9 +551,9 @@ Se calcularon en total `{r} length(funciones_clase)` métricas de clase. Las mé
 
 metricas_csv <- list.files(
   path = "datos/",
-  pattern = "_clase_",
+  pattern = "metricas_clase_",
   full.names = TRUE
-)[2:11]
+)[1:10]
 
 m_clase <- read_csv(metricas_csv, show_col_types = FALSE) |> 
   rename(clase = class) |> 
@@ -647,7 +648,7 @@ m_clase |>
   fmt_url(columns = Métrica, color = "#8E063B") |>
   tab_source_note(
     source_note = md(
-      "[Datos (.csv)](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/métricas_X_cla.csv) disponibles para su descarga"
+      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/métricas_X_cla.csv)")
     )
   ) |> 
   tab_options(
@@ -767,9 +768,9 @@ Se muestra a continuación una tabla que resume los valores de las métricas que
 
 metricas2_csv <- list.files(
   path = "datos/",
-  pattern = "_paisaje_",
+  pattern = "metricas_paisaje_",
   full.names = TRUE
-)[2:11]
+)[1:10]
 
 m_paisaje <- read_csv(metricas2_csv, show_col_types = FALSE) |> 
   select(metric, valor = value, dependencia_terreno) |> 
@@ -847,7 +848,7 @@ m_paisaje |>
   fmt_url(columns = Métrica, color = "#8E063B") |>
   tab_source_note(
     source_note = md(
-      "[Datos (.csv)](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/métricas_X_pai.csv) disponibles para su descarga"
+      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/métricas_X_pai.csv)")
     )
   ) |> 
   tab_options(
@@ -1363,11 +1364,11 @@ Luego, defino una función para la lectura de los ráster de nutrientes, de acue
 f_nutrientes <- function(nutriente) {
   nutrientes_files <- paste0(
     "nutrientes/Escenario ",
-    c(.1, .3, .7, 1),
+    seq(.1, 1, .1),
     "/",
     nutriente,
     "_",
-    c(1, 3, 7, 10),
+    1:10,
     ".tif"
   )
 
@@ -1381,7 +1382,7 @@ f_nutrientes <- function(nutriente) {
       raster = nutrientes_rast,
       vector = sf_clases,
       producto = nutriente,
-      escenario = c(1, 3, 7, 10)
+      escenario = 1:10
     ),
     f_extract
   )
@@ -1397,13 +1398,15 @@ f_nutrientes <- function(nutriente) {
 walk(
   c("n_total_export", "ndr_n", "ndr_p", "p_surface_export"),
   f_nutrientes
-)
+) # 27M
 ```
 
 La lectura de los resultados permite generar la siguiente figura, que muestra la proporción de nutrientes para cada clase, según el escenario dado.
 
 ```{r}
-nutri_files <- list.files("datos/", pattern = "nutriente", full.names = TRUE)
+nutri_files <- list.files(
+  path = "datos/", pattern = "nutriente", full.names = TRUE
+)[2:5]
 nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
 
 f_gg_nutrientes <- function(nutriente) {
@@ -1473,7 +1476,9 @@ La siguiente tabla resume las cantidades y tipos de nutrientes, por clase y esce
 ```{r}
 #| tbl-cap: Tabla con los valores de nutrientes por clase, por escenario
 
-nutri_files <- list.files("datos/", pattern = "nutriente", full.names = TRUE)
+nutri_files <- list.files(
+  path = "datos/", pattern = "nutriente", full.names = TRUE
+)[2:5]
 nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
 
 nutri_tbl |> 
@@ -1536,6 +1541,11 @@ nutri_tbl |>
     esc = "Escenario",
     total = html("<i>Total por<br>escenario</i>")
   ) |> 
+  tab_source_note(
+    source_note = md(
+      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/nutrientes_X_clase_X_escenario.csv)")
+    )
+  ) |> 
   tab_options(
     table.width = 700,
     table.border.top.style = "hidden"
@@ -1548,76 +1558,76 @@ nutri_tbl |>
 Se leyeron los ráster de acuerdo al escenario y el nutriente, extrayendo el área asociada a cada clase. Para ello se creó una función personalizada.
 
 ```{r}
-escenarios_v <- c(.1, .3, .7, 1)
-escenarios10_v <- c(1, 3, 7, 10)
-
-f_area_lista <- function(id, nutriente) {
-  raster <- paste0(
-    "nutrientes/Escenario ",
-    escenarios_v[id],
-    "/",
-    nutriente,
-    "_",
-    escenarios10_v[id],
-    ".tif"
-  ) |>
-    rast()
-
-  vector <- sf_clases[[id]]
-
-  exactextractr::exact_extract(
-    x = raster,
-    y = vector,
-    force_df = TRUE,
-    include_area = TRUE,
-    max_cells_in_memory = 230000000
-  )
-}
+# escenarios_v <- seq(.1, 1, .1)
+# escenarios10_v <- 1:10
+# 
+# f_area_lista <- function(id, nutriente) {
+#   raster <- paste0(
+#     "nutrientes/Escenario ",
+#     escenarios_v[id],
+#     "/",
+#     nutriente,
+#     "_",
+#     escenarios10_v[id],
+#     ".tif"
+#   ) |>
+#     rast()
+# 
+#   vector <- sf_clases[[id]]
+# 
+#   exactextractr::exact_extract(
+#     x = raster,
+#     y = vector,
+#     force_df = TRUE,
+#     include_area = TRUE,
+#     max_cells_in_memory = 230000000
+#   )
+# }
 ```
 
 Para cada escenario y tipo de nutriente se obtuvo el área total asignada a cada clase.
 
 ```{r}
-f_area_tbl <- function(id, nutriente) {
-  lista <- f_area_lista(id = id, nutriente = nutriente)
-
-  l <- purrr::map(
-    1:4,
-    \(x) {
-      lista[[x]] |>
-        as_tibble() |>
-        drop_na() |>
-        reframe(
-          area = sum(coverage_fraction * area)
-        ) |>
-        mutate(value = c(-1:2)[x])
-    }
-  )
-
-  list_rbind(l) |>
-    full_join(d_r, by = join_by(value)) |>
-    select(-col) |>
-    mutate(
-      escenario = id,
-      nutriente = nutriente
-    )
-}
+# f_area_tbl <- function(id, nutriente) {
+#   lista <- f_area_lista(id = id, nutriente = nutriente)
+# 
+#   l <- purrr::map(
+#     1:4,
+#     \(x) {
+#       lista[[x]] |>
+#         as_tibble() |>
+#         drop_na() |>
+#         reframe(
+#           area = sum(coverage_fraction * area)
+#         ) |>
+#         mutate(value = c(-1:2)[x])
+#     }
+#   )
+# 
+#   list_rbind(l) |>
+#     full_join(d_r, by = join_by(value)) |>
+#     select(-col) |>
+#     mutate(
+#       escenario = id,
+#       nutriente = nutriente
+#     )
+# }
 ```
 
 Se ejecutaron las funciones personalizadas previas, generando `.csv` por nutriente y almacenando para lecturas posteriores.
 
 ```{r}
-f_area_csv <- function(nutriente) {
-  df <- purrr::map(
-    1:4,
-    ~ f_area_tbl(id = .x, nutriente = nutriente)
-  )
-
-  list_rbind(df) |>
-    write_csv(paste0("datos/area-clase-", nutriente, ".csv"))
-
-  print(paste0("---Datos ", nutriente, " almacenados---"))
-}
+# f_area_csv <- function(nutriente) {
+#   df <- purrr::map(
+#     1:4,
+#     ~ f_area_tbl(id = .x, nutriente = nutriente)
+#   )
+# 
+#   list_rbind(df) |>
+#     write_csv(paste0("datos/area-clase-", nutriente, ".csv"))
+# 
+#   print(paste0("---Datos ", nutriente, " almacenados---"))
+# }
 
 # {
 #   ti <- Sys.time()
@@ -1660,7 +1670,9 @@ area_clase_csv <- list.files(
 
 area_clase_tbl <- read_csv("datos/area_por_clase.csv", show_col_types = FALSE)
 
-nutri_files <- list.files("datos/", pattern = "nutriente", full.names = TRUE)
+nutri_files <- list.files(
+  path = "datos/", pattern = "nutriente", full.names = TRUE
+)[2:5]
 nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
 
 f_gg_area <- function(i_nutriente) {
@@ -1737,6 +1749,8 @@ ggsave(
 Tabla con las proporciones de nutrientes, por clase y escenario. A la derecha se muestran las proporciones de superficie de cada clase.
 
 ```{r}
+#| column: screen-inset
+
 area_ref_tbl <- area_clase_tbl |> 
   select(tipo, ref = area_prop)
 
@@ -1799,7 +1813,7 @@ gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |>
     label = "Escenario",
     columns = starts_with("esc")
   ) |> 
-  gt::cols_width(ref ~ pct(15)) |> 
+  gt::cols_width(ref ~ pct(7)) |> 
   tab_style(
     style = cell_text(
       weight = "bold", decorate = "underline", color = "#8E063B"
@@ -1808,7 +1822,7 @@ gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |>
       1:nrow(area_gt_tbl),
       \(fila) {
         cells_body(
-          columns = which(area_gt_tbl[fila, 3:6] > area_gt_tbl$ref[fila])+2,
+          columns = which(area_gt_tbl[fila, 3:12] > area_gt_tbl$ref[fila])+2,
           rows = fila
         )
       }
@@ -1820,18 +1834,24 @@ gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |>
   tab_footnote(
     footnote = html(
       "<b style='font-family: JetBrains Mono; color: #8E063B'>Texto 
-      destacado</b> indica que en ese escenario, el nutriente asociado 
+      destacado</b> indica que, en ese escenario, el nutriente asociado 
       a la clase es <b><u>mayor</u></b> al porcentaje de superficie
       correspondiente."
     )
   ) |> 
+  tab_source_note(
+    source_note = md(
+      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/fraccion_nutrientes_X_clase_X_escenario.csv)")
+    )
+  ) |> 
   tab_options(
-    table.width = 650,
-    table.border.top.style = "hidden"
+    table.width = 1500,
+    table.border.top.style = "hidden",
+    table.background.color = "transparent"
   ) |> 
   as_raw_html()
 ```
 
-En todos los casos, `Urban` y `Agriculture` presentan un porcentaje del total de nutrientes superior a su superficie ocupada, excepto para `N_TOTAL_EXPORT`.
+<!-- En todos los casos, `Urban` y `Agriculture` presentan un porcentaje del total de nutrientes superior a su superficie ocupada, excepto para `N_TOTAL_EXPORT`. -->
 
-Las clases `Grassland` y `Forest`, en todos los nutrientes, generaron menor proporción del total, respecto del área ocupada correspondiente.
+<!-- Las clases `Grassland` y `Forest`, en todos los nutrientes, generaron menor proporción del total, respecto del área ocupada correspondiente. -->

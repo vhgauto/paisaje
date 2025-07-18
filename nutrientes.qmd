@@ -1548,98 +1548,15 @@ nutri_tbl |>
   ) |> 
   tab_options(
     table.width = 700,
-    table.border.top.style = "hidden"
+    table.border.top.style = "hidden",
+    table.background.color = "transparent"
   ) |> 
   as_raw_html()
 ```
 
 ## Relación respecto del área
 
-Se leyeron los ráster de acuerdo al escenario y el nutriente, extrayendo el área asociada a cada clase. Para ello se creó una función personalizada.
-
-```{r}
-# escenarios_v <- seq(.1, 1, .1)
-# escenarios10_v <- 1:10
-# 
-# f_area_lista <- function(id, nutriente) {
-#   raster <- paste0(
-#     "nutrientes/Escenario ",
-#     escenarios_v[id],
-#     "/",
-#     nutriente,
-#     "_",
-#     escenarios10_v[id],
-#     ".tif"
-#   ) |>
-#     rast()
-# 
-#   vector <- sf_clases[[id]]
-# 
-#   exactextractr::exact_extract(
-#     x = raster,
-#     y = vector,
-#     force_df = TRUE,
-#     include_area = TRUE,
-#     max_cells_in_memory = 230000000
-#   )
-# }
-```
-
-Para cada escenario y tipo de nutriente se obtuvo el área total asignada a cada clase.
-
-```{r}
-# f_area_tbl <- function(id, nutriente) {
-#   lista <- f_area_lista(id = id, nutriente = nutriente)
-# 
-#   l <- purrr::map(
-#     1:4,
-#     \(x) {
-#       lista[[x]] |>
-#         as_tibble() |>
-#         drop_na() |>
-#         reframe(
-#           area = sum(coverage_fraction * area)
-#         ) |>
-#         mutate(value = c(-1:2)[x])
-#     }
-#   )
-# 
-#   list_rbind(l) |>
-#     full_join(d_r, by = join_by(value)) |>
-#     select(-col) |>
-#     mutate(
-#       escenario = id,
-#       nutriente = nutriente
-#     )
-# }
-```
-
-Se ejecutaron las funciones personalizadas previas, generando `.csv` por nutriente y almacenando para lecturas posteriores.
-
-```{r}
-# f_area_csv <- function(nutriente) {
-#   df <- purrr::map(
-#     1:4,
-#     ~ f_area_tbl(id = .x, nutriente = nutriente)
-#   )
-# 
-#   list_rbind(df) |>
-#     write_csv(paste0("datos/area-clase-", nutriente, ".csv"))
-# 
-#   print(paste0("---Datos ", nutriente, " almacenados---"))
-# }
-
-# {
-#   ti <- Sys.time()
-#   purrr::walk(
-#     c("n_total_export", "ndr_n", "ndr_p", "p_surface_export"),
-#     f_area_csv
-#   )
-#   tf <- Sys.time()
-#   delta <- tf - ti
-#   # 12M 20S
-# }
-```
+Tomando las cantidades de nutrientes asignados a cada clase, se calculó la proporción respecto del total de nutrientes por escenario. Luego, se comparó con el porcentaje de la superficie cubierta por la clase correspondiente.
 
 Dado que cada escenario generado conserva la misma proporción de áreas por clase, se calcula para un único vector, almacenando los resultados.
 
@@ -1751,69 +1668,69 @@ Tabla con las proporciones de nutrientes, por clase y escenario. A la derecha se
 ```{r}
 #| column: screen-inset
 
-area_ref_tbl <- area_clase_tbl |> 
+area_ref_tbl <- area_clase_tbl |>
   select(tipo, ref = area_prop)
 
-area_gt_tbl <- nutri_tbl |> 
-  mutate(tipo = fct_reorder(tipo, sum)) |> 
+area_gt_tbl <- nutri_tbl |>
+  mutate(tipo = fct_reorder(tipo, sum)) |>
   mutate(
     fraccion = sum/sum(sum), .by = c(esc, prod)
-  ) |> 
-  arrange(tipo) |> 
-  mutate(esc = paste0("Esc. ", esc)) |> 
+  ) |>
+  arrange(tipo) |>
+  mutate(esc = paste0("Esc. ", esc)) |>
   mutate(esc = factor(esc)) |>
   pivot_wider(
     names_from = esc,
     values_from = fraccion,
     id_cols = c(prod, tipo)
-  ) |> 
-  mutate(prod = toupper(prod)) |> 
+  ) |>
+  mutate(prod = toupper(prod)) |>
   mutate(
     prod = factor(
       prod, levels = c("N_TOTAL_EXPORT", "NDR_N", "P_SURFACE_EXPORT", "NDR_P")
     )
-  ) |> 
-  arrange(prod) |> 
+  ) |>
+  arrange(prod) |>
   full_join(area_ref_tbl, by = join_by(tipo))
 
-gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |> 
-  tab_stub_indent(indent = 5, rows = everything()) |> 
+gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |>
+  tab_stub_indent(indent = 3, rows = everything()) |>
   fmt_percent(
     decimals = 1, sep_mark = ".", dec_mark = ","
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(),
     style = cell_text(font = "JetBrains Mono")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_row_groups(),
     style = cell_text(weight = "bold", color = "black")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = "ref"),
     style = cell_fill(color = "grey97")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_column_labels(columns = "ref"),
     style = cell_fill(color = "grey97")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_row_groups(groups = c("N_TOTAL_EXPORT", "NDR_N")),
     style = cell_fill(color = "#FFF8FB")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_row_groups(groups = c("P_SURFACE_EXPORT", "NDR_P")),
     style = cell_fill(color = "#F1F9E5")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_stub(),
     style = cell_fill(color = "grey97")
-  ) |> 
+  ) |>
   tab_spanner(
     label = "Escenario",
     columns = starts_with("esc")
-  ) |> 
-  gt::cols_width(ref ~ pct(7)) |> 
+  ) |>
+  gt::cols_width(ref ~ pct(8)) |>
   tab_style(
     style = cell_text(
       weight = "bold", decorate = "underline", color = "#8E063B"
@@ -1827,28 +1744,28 @@ gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |>
         )
       }
     )
-  ) |> 
+  ) |>
   cols_label(
     ref = html("<i>% superficie<br>de la clase</i>")
-  ) |> 
+  ) |>
   tab_footnote(
     footnote = html(
-      "<b style='font-family: JetBrains Mono; color: #8E063B'>Texto 
-      destacado</b> indica que, en ese escenario, el nutriente asociado 
+      "<b style='font-family: JetBrains Mono; color: #8E063B'>Texto
+      destacado</b> indica que, en ese escenario, el nutriente asociado
       a la clase es <b><u>mayor</u></b> al porcentaje de superficie
       correspondiente."
     )
-  ) |> 
+  ) |>
   tab_source_note(
     source_note = md(
       glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/fraccion_nutrientes_X_clase_X_escenario.csv)")
     )
-  ) |> 
+  ) |>
   tab_options(
-    table.width = 1500,
+    table.width = 1300,
     table.border.top.style = "hidden",
     table.background.color = "transparent"
-  ) |> 
+  ) |>
   as_raw_html()
 ```
 

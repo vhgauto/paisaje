@@ -1284,7 +1284,7 @@ Se calcularon la cantidad de nutrientes (fósforo y nitrógeno) generados por ca
 
 ## Cantidad de nutrientes
 
-Inicialmente se seleccionan las dependencias del terreno 0.1, 0.3, 0.7 y 1. Estos escenarios contienen diferentes distribuciones de clases, en formato ráster.
+Se tomaron todos los escenarios disponibles, considerandos las dependencias del terreno de 0,1 a 1, en pasos de 0,1. Cada escenario posee un distribución de clases dada, en formato ráster.
 
 ```{r}
 #| eval: false
@@ -1296,7 +1296,7 @@ clases_files <- paste0("rasters/land-", c(.1, .3, .7, 1), ".tif")
 clases_rast <- purrr::map(clases_files, rast)
 ```
 
-Los ráster se vectorizan y almacenan para una rápida lectura posterior.
+Los ráster se vectorizaron y almacenaron para una rápida lectura posterior.
 
 ```{r}
 #| eval: false
@@ -1321,7 +1321,7 @@ purrr::walk2(
 )
 ```
 
-Leo los vectores. **Es requisito utilizar el paquete `{sf}`**.
+Lectura de los vectores. **Es requisito utilizar el paquete `{sf}`**.
 
 ```{r}
 #| eval: false
@@ -1332,9 +1332,9 @@ sf_clases <- purrr::map(
 )
 ```
 
-Defino una función para la extracción de las cantidades de nutrientes por clase, por escenario. 
+Se definió una función para la extracción de las cantidades de nutrientes por clase, por escenario. 
 
-Se emplea el paquete [`{exactextractr}`](https://isciences.gitlab.io/exactextractr/), que permite una extracción de valores de píxel <u>**rápida**</u> y precisa.
+El paquete [`{exactextractr}`](https://isciences.gitlab.io/exactextractr/) fue utilizado, permitiendo una extracción de valores de píxel <u>**rápida**</u> y precisa.
 
 ```{r}
 #| eval: false
@@ -1356,7 +1356,7 @@ f_extract <- function(raster, vector, producto, escenario) {
 }
 ```
 
-Luego, defino una función para la lectura de los ráster de nutrientes, de acuerdo con el escenario, extracción de valores de píxel y almacenamiento de los resultados.
+Luego, se definió una función para la lectura de los ráster de nutrientes, de acuerdo con el escenario, extracción de valores de píxel y almacenamiento de los resultados.
 
 ```{r}
 #| eval: false
@@ -1401,7 +1401,7 @@ walk(
 ) # 27M
 ```
 
-La lectura de los resultados permite generar la siguiente figura, que muestra la proporción de nutrientes para cada clase, según el escenario dado.
+La lectura de los resultados permitió generar la siguiente figura, que muestra la proporción de nutrientes para cada clase, según el escenario dado.
 
 ```{r}
 nutri_files <- list.files(
@@ -1471,7 +1471,7 @@ ggsave(
 
 :::
 
-La siguiente tabla resume las cantidades y tipos de nutrientes, por clase y escenario disponible. Se agrega a la derecha una columna con la suma total de nutrientes por escenario.
+La siguiente tabla resume las cantidades y tipos de nutrientes, por clase y escenario disponible. Se agregó a la derecha una columna con la suma total de nutrientes por escenario.
 
 ```{r}
 #| tbl-cap: Tabla con los valores de nutrientes por clase, por escenario
@@ -1556,9 +1556,9 @@ nutri_tbl |>
 
 ## Relación respecto del área
 
-Tomando las cantidades de nutrientes asignados a cada clase, se calculó la proporción respecto del total de nutrientes por escenario. Luego, se comparó con el porcentaje de la superficie cubierta por la clase correspondiente.
+Tomando las cantidades de nutrientes asignados a cada clase, se calculó la proporción respecto del total de nutrientes por escenario. Luego, se comparó con el porcentaje de superficie cubierta por la clase correspondiente.
 
-Dado que cada escenario generado conserva la misma proporción de áreas por clase, se calcula para un único vector, almacenando los resultados.
+Dado que cada escenario generado conservó la misma proporción de áreas por clase, se calculó para un único vector, almacenando los resultados.
 
 ```{r}
 #| eval: false

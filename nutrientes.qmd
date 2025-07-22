@@ -2112,7 +2112,7 @@ m_conect_ref_tbl |>
   tab_style(
     locations = cells_row_groups(),
     style = list(
-      cell_fill(color = alpha("darkviolet", .2)),
+      cell_fill(color = alpha("#8E063B", .2)),
       cell_text(weight = "bold")
     )
   ) |> 

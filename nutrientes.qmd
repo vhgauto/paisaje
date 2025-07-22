@@ -4,8 +4,11 @@ format:
   html:
     number-sections: true
     embed-resources: true
+    anchor-sections: true
+    smooth-scroll: true
     toc: true
     lang: es
+    tbl-cap-location: top
     language:
       es:
         title-block-author-plural: "Autores"
@@ -44,6 +47,8 @@ author:
       - name: IREA
         url: http://irea.cnr.it/
 date: last-modified
+crossref:
+  chapters: true
 ---
 
 El paquete usado es [`{rflsgen}`](https://dimitri-justeau.github.io/rflsgen/), **Neutral Landscape Generator with Targets on Landscape Indices**.
@@ -96,8 +101,11 @@ dem <- rast("datos/dem.tif")
 
 Las clases de `r` son:
 
+::: {#tbl-clases}
+
 ```{r}
 #| echo: false
+#| tbl-cap: Clases y valores asignados
 
 read_delim(
   file = "datos/LULCcode.txt",
@@ -113,12 +121,14 @@ read_delim(
   ) |>
   mutate(value = as.integer(value)) |>
   rename(Valor = value, Tipo = tipo) |>
-  gt::gt() |>
+  gt() |>
   tab_style(
     locations = cells_body(columns = Valor),
     style = cell_text(font = "JetBrains Mono", color = "black")
   )
 ```
+
+:::
 
 Agrego las categorías a `r` e incorporo colores. Visualizo ambos ráster.
 
@@ -153,9 +163,14 @@ coltab(r) <- col_df
 
 ::: {.column-screen-inset}
 
+:::: {#fig-mapas}
+
 ```{r}
 #| echo: false
 #| layout-ncol: 2
+#| fig-cap: 
+#|   - "Mapa de clases"
+#|   - "Mapa de modelo digital de elevación"
 
 par(bg = "#FAFAFA")
 plot(
@@ -166,6 +181,10 @@ plot(
   dem, axes = FALSE, mar = c(1, 1, 1, 8), main = "DEM", background = "#FAFAFA"
 )
 ```
+
+Mapas de la región de interés.
+
+::::
 
 :::
 
@@ -222,6 +241,7 @@ Se muestran a continuación los escenarios para las dependencias del terreno 0,1
 #| echo: false
 #| layout-ncol: 2
 #| layout-nrow: 2
+#| fig-cap: Mapa de clases para una selección de dependencias del terreno
 
 dependencias <- c(.1, .3, .7, 1)
 clases <- c(30, 40, 50) # Grassland, Agriculture, Urban
@@ -410,8 +430,11 @@ metrica_paisaje_lulc |>
 
 Tabla con métricas a nivel de <b><u>clase</u></b> obteniendo un valor para cada clase de uso del suelo.
 
+::: {#tbl-met-clase-lulc}
+
 ```{r}
 #| column: page
+#| tbl-cap: Métricas de clase, escenario original
 
 read_csv("datos/metrica_clase_lulc.csv", show_col_types = FALSE) |> 
   pivot_wider(
@@ -466,9 +489,15 @@ read_csv("datos/metrica_clase_lulc.csv", show_col_types = FALSE) |>
   as_raw_html()
 ```
 
+:::
+
 Tabla con métricas a nivel de <b><u>paisaje</u></b> para todo el ráster de uso del suelo.
 
+::: {#tbl-met-paisaje-lulc}
+
 ```{r}
+#| tbl-cap: Métricas del paisaje, escenario original
+
 read_csv("datos/metrica_paisaje_lulc.csv", show_col_types = FALSE) |> 
   mutate(
     txt = map(metric, f_contenido_funcion2)
@@ -513,6 +542,8 @@ read_csv("datos/metrica_paisaje_lulc.csv", show_col_types = FALSE) |>
   ) |> 
   as_raw_html()
 ```
+
+:::
 
 ## Métricas a nivel de <u>clase</u>
 
@@ -596,6 +627,8 @@ metric_orden <- m_clase |>
 m_clase <- mutate(m_clase, metric = fct(metric, levels = levels(metric_orden)))
 ```
 
+::: {#tbl-met-clase-indep}
+
 ```{r}
 #| tbl-cap: Métricas de clase independientes de la dependencia del terreno.
 
@@ -657,10 +690,11 @@ m_clase |>
   as_raw_html()
 ```
 
+:::
+
 La métricas de clase que mostraron cambios con la dependencia del terreno se observan en la figura de líneas.
 
 ```{r}
-#| fig-dpi: 300
 #| warning: false
 #| message: false
 
@@ -728,7 +762,7 @@ ggsave(
 ```
 
 ::: {.column-screen-inset}
-![Métricas de clase variables con la dependencia del terreno.](figuras/metricas_clase_dif.png)
+![Métricas de clase variables con la dependencia del terreno.](figuras/metricas_clase_dif.png){#fig-met-clase-dep}
 :::
 
 ## Métricas a nivel de <u>paisaje</u>
@@ -800,6 +834,8 @@ metric_orden2 <- m_paisaje |>
 m_paisaje <- mutate(m_paisaje, metric = fct(metric, levels = levels(metric_orden2)))
 ```
 
+::: {#tbl-met-paisaje-indep}
+
 ```{r}
 #| tbl-cap: Métricas de paisaje independientes de la dependencia del terreno.
 
@@ -856,6 +892,8 @@ m_paisaje |>
   ) |> 
   as_raw_html()
 ```
+
+:::
 
 Con las métricas del paisaje que varían con la dependencia del terreno se creó la siguiente figura.
 
@@ -923,7 +961,7 @@ ggsave(
 ```
 
 ::: {.column-screen-inset}
-![Métricas de paisaje variables con la dependencia del terreno.](figuras/metricas_paisaje_dif.png)
+![Métricas de paisaje variables con la dependencia del terreno.](figuras/metricas_paisaje_dif.png){#fig-met-paisaje-dep}
 :::
 
 # Estructura del paisaje propia
@@ -939,7 +977,11 @@ Luego, para verificar los escenarios generados, calculo las métricas y verifico
 
 ::: {.column width="48%"}
 
+::: {#tbl-met-casoI}
+
 ```{r}
+#| tbl-cap: Características del paisaje para el Caso I
+
 tibble(
   Clase = c("Clase 1", "Clase 2"),
   `Number of patches` = c("[700, 800]", "[800, 1100]"),
@@ -964,12 +1006,18 @@ tibble(
 
 :::
 
+:::
+
 ::: {.column width="2%"}
 :::
 
 ::: {.column width="48%"}
 
+::: {#tbl-met-casoII}
+
 ```{r}
+#| tbl-cap: Características del paisaje para el Caso II
+
 tibble(
   Clase = c("Clase A", "Clase B"),
   `Number of patches` = c("[700, 800]", "[700, 800]"),
@@ -991,6 +1039,8 @@ tibble(
     table.background.color = "transparent"
   )
 ```
+
+:::
 
 :::
 
@@ -1094,8 +1144,13 @@ Visualizo los resultados de ambos casos.
 
 ::: {.column-screen-inset}
 
+::: {#fig-casos}
+
 ```{r}
 #| layout-ncol: 2
+#| fig-cap: 
+#|   - Mapa de clases para el Caso I
+#|   - Mapa de clases para el Caso II
 
 r_custom <- rast("rasters/r_custom.tif")
 
@@ -1154,6 +1209,8 @@ plot(
 
 :::
 
+:::
+
 Verifico que el ráster creado tenga las métricas previamente definidas para cada clase.
 
 ```{r}
@@ -1187,7 +1244,11 @@ bind_rows(
 
 ::: {.column width="48%"}
 
+::: {#tbl-met-casoI-verif}
+
 ```{r}
+#| tbl-cap: Verificación de métricas para el Caso I
+
 read_tsv("datos/df_custom.tsv", show_col_types = FALSE) |>
   filter(class != -1) |>
   mutate(
@@ -1229,12 +1290,18 @@ read_tsv("datos/df_custom.tsv", show_col_types = FALSE) |>
 
 :::
 
+:::
+
 ::: {.column width="2%"}
 :::
 
 ::: {.column width="48%"}
 
+::: {#tbl-met-casoII-verif}
+
 ```{r}
+#| tbl-cap: Verificación de métricas para el Caso II
+
 read_tsv("datos/df_custom2.tsv", show_col_types = FALSE) |>
   filter(class != -1) |>
   mutate(
@@ -1273,6 +1340,8 @@ read_tsv("datos/df_custom2.tsv", show_col_types = FALSE) |>
     table.background.color = "transparent"
   )
 ```
+
+:::
 
 :::
 
@@ -1473,6 +1542,8 @@ ggsave(
 
 La siguiente tabla resume las cantidades y tipos de nutrientes, por clase y escenario disponible. Se agregó a la derecha una columna con la suma total de nutrientes por escenario.
 
+::: {#tbl-nut-esc-clase}
+
 ```{r}
 #| tbl-cap: Tabla con los valores de nutrientes por clase, por escenario
 
@@ -1553,6 +1624,8 @@ nutri_tbl |>
   ) |> 
   as_raw_html()
 ```
+
+:::
 
 ## Relación respecto del área
 
@@ -1659,11 +1732,13 @@ ggsave(
 
 ::: {.callout-note appearance="simple" collapse=true icon=false title="Mostrar figura"}
 
-![Porcentaje de nutrientes de cada clase, por escenario. En cada panel, la línea de trazos horizontal indica el porcentaje de superficie asociado a cada clase.](figuras/nutrientes_porcentaje_clase.png)
+![Porcentaje de nutrientes de cada clase, por escenario. En cada panel, la línea de trazos horizontal indica el porcentaje de superficie asociado a cada clase.](figuras/nutrientes_porcentaje_clase.png){#fig-nut-esc-clase}
 
 :::
 
 Tabla con las proporciones de nutrientes, por clase y escenario. A la derecha se muestran las proporciones de superficie de cada clase.
+
+::: {#tbl-nut-esc-clase-porcentaje}
 
 ```{r}
 #| column: screen-inset
@@ -1768,6 +1843,8 @@ gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |>
   )
 ```
 
+:::
+
 # Cálculo de métricas de conectividad
 
 ```{r}
@@ -1789,6 +1866,10 @@ m_nombres <- c(
 )
 
 m_nombres <- set_names(m_nombres, m)
+
+m_conect <- read_csv("datos/m_conect.csv", show_col_types = FALSE)
+m_conect_lulc <- read_csv("datos/m_conect_lulc.csv", show_col_types = FALSE) |>
+  rename(metric_lulc = metric)
 ```
 
 El paquete utilizado fue [{lconnect}](https://github.com/FMestre1/lconnect) para el cálculo de las métricas de conectividad.
@@ -1826,6 +1907,8 @@ saveRDS(v_lconnect_lulc, "vectores/v_lconnect_lulc.rds")
 La figura siguiente muestra las métricas.
 
 ```{r}
+#| eval: false
+
 v_lconnect_lulc <- readRDS("vectores/v_lconnect_lulc.rds")
 
 m_conect_lulc <- purrr::map(
@@ -1862,7 +1945,9 @@ g5 <- m_conect_lulc |>
   theme_bw(base_size = 13, base_family = "JetBrains Mono") +
   theme(
     aspect.ratio = .5,
+    plot.background = element_blank(),
     panel.spacing = unit(.6, "cm"),
+    panel.background = element_blank(),
     panel.grid.major.y = element_line(color = "grey90"),
     panel.grid = element_blank(),
     strip.text = element_text(
@@ -1884,9 +1969,11 @@ ggsave(
 
 ::: {.callout-note appearance="simple" collapse=true icon=false title="Mostrar figura"}
 
-![El eje horizontal indica la distancia máxima. En el eje vertival se lee el valor del íncide de cada panel.](figuras/lconnect_lulc.png)
+![El eje horizontal indica la distancia máxima. En el eje vertival se lee el valor del íncide de cada panel.](figuras/lconnect_lulc.png){#fig-met-con-lulc}
 
 :::
+
+::: {#tbl-met-con-lulc}
 
 ```{r}
 #| column: page
@@ -1894,14 +1981,16 @@ ggsave(
 m_conect_lulc |> 
   pivot_wider(
     names_from = tipo,
-    values_from = metric
+    values_from = metric_lulc
   ) |> 
   gt() |> 
-  cols_label(
-    max_d = "Distancia Máx."
-  ) |> 
   sub_missing() |> 
-  fmt_auto() |> 
+  fmt_number(
+    columns = max_d,
+    dec_mark = ",",
+    sep_mark = "."
+  ) |> 
+  fmt_auto(lg_num_pref = "suf") |> 
   tab_style(
     locations = cells_body(),
     style = cell_text(font = "JetBrains Mono")
@@ -1911,6 +2000,9 @@ m_conect_lulc |>
       glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/m_conect_lulc.csv)")
     )
   ) |>
+  cols_label(
+    max_d = "Distancia Máx."
+  ) |> 
   tab_options(
     table.width = 1000,
     table.border.top.style = "hidden",
@@ -1918,6 +2010,8 @@ m_conect_lulc |>
   ) |>
   as_raw_html()
 ```
+
+:::
 
 ## Métricas de conectividad por escenarios
 
@@ -1983,12 +2077,11 @@ write_csv(m_conect, "datos/m_conect.csv")
 
 La siguiente figura muestra las métricas de conectividad para cada escenario y distancia máxima, comparada con las calculadas para el uso de suelo original.
 
+::: {#tbl-met-con-esc}
+
 ```{r}
 #| column: screen-inset
-
-m_conect <- read_csv("datos/m_conect.csv", show_col_types = FALSE)
-m_conect_lulc <- read_csv("datos/m_conect_lulc.csv", show_col_types = FALSE) |>
-  rename(metric_lulc = metric)
+#| tbl-cap: Métricas de conectividad por escenario y distancia máxima
 
 m_conect_ref_tbl <- m_conect |> 
   mutate(esc = paste0("Esc. ", esc)) |>
@@ -2071,3 +2164,6 @@ m_conect_ref_tbl |>
   ) |> 
   cols_width("metric_lulc" ~ pct(9))
 ```
+
+:::
+

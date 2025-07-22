@@ -1730,7 +1730,7 @@ gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |>
     label = "Escenario",
     columns = starts_with("esc")
   ) |>
-  gt::cols_width(ref ~ pct(8)) |>
+  cols_width(ref ~ pct(8)) |>
   tab_style(
     style = cell_text(
       weight = "bold", decorate = "underline", color = "#8E063B"
@@ -1765,10 +1765,309 @@ gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |>
     table.width = 1300,
     table.border.top.style = "hidden",
     table.background.color = "transparent"
+  )
+```
+
+# Cálculo de métricas de conectividad
+
+```{r}
+max_distancias <- c(0, 10^(1:5))
+
+m <- c("NC", "LNK", "SLC", "MSC", "CCP", "LCP", "CPL", "ECS", "AWF", "IIC")
+
+m_nombres <- c(
+  "Number of components",
+  "Number of links",
+  "Size of the Largest Component",
+  "Mean Size of Components",
+  "Class coincidence probability",
+  "Landscape coincidence probability",
+  "Characteristic path length",
+  "Expected cluster size",
+  "Area-weighted flux",
+  "Integral index of connectivity"
+)
+
+m_nombres <- set_names(m_nombres, m)
+```
+
+El paquete utilizado fue [{lconnect}](https://github.com/FMestre1/lconnect) para el cálculo de las métricas de conectividad.
+
+Los vectores procesados corresponden con las versiones vectorizadas de los escenarios sintéticos por cada dependencia del terreno.
+
+Es requisito indicar un valor de distancia máxima. Se propusieron los siguientes valores: 0, 10, 100, 1000, 10000 y 100000.
+
+## Métricas de conectividad para LULC
+
+Se calcularon las métricas de conectividad para el vector original de clases. 
+
+```{r}
+#| eval: false
+
+v_lulc <- vect("vectores/lulc.gpkg")
+
+v_lconnect_lulc <- purrr::map(
+  max_distancias,
+  purrr::in_parallel(
+    \(x) {
+      print(x)
+      lconnect::upload_land(
+        land_path = "vectores/lulc.gpkg",
+        habitat = d$tipo,
+        max_dist = x
+      )
+    }
+  )
+)
+
+saveRDS(v_lconnect_lulc, "vectores/v_lconnect_lulc.rds")
+```
+
+La figura siguiente muestra las métricas.
+
+```{r}
+v_lconnect_lulc <- readRDS("vectores/v_lconnect_lulc.rds")
+
+m_conect_lulc <- purrr::map(
+  v_lconnect_lulc,
+  \(x, y) {
+    metricas <- lconnect::con_metric(x, m)
+    tibble(
+      metric = metricas,
+      tipo = names(metricas)
+    ) |>
+      mutate(max_d = x$max_dist)
+  }
+) |>
+  purrr::list_rbind() |>
+  mutate(max_d = factor(max_d)) |>
+  mutate(tipo = factor(tipo, levels = m))
+
+write_csv(m_conect_lulc, "datos/m_conect_lulc.csv")
+
+g5 <- m_conect_lulc |> 
+  drop_na() |> 
+  ggplot(aes(max_d, metric, group = tipo)) +
+  geom_col(fill = alpha("#8E063B", .4), color = NA) +
+  facet_wrap(
+    vars(tipo), scales = "free_y", 
+    axis.labels = "all_x",
+    nrow = 5
+  ) +
+  scale_x_discrete(
+    breaks = factor(max_distancias),
+    labels = c(0, 10, 100, "1E3", "1E4", "1E5")
+  ) +
+  labs(x = NULL, y = NULL) +
+  theme_bw(base_size = 13, base_family = "JetBrains Mono") +
+  theme(
+    aspect.ratio = .5,
+    panel.spacing = unit(.6, "cm"),
+    panel.grid.major.y = element_line(color = "grey90"),
+    panel.grid = element_blank(),
+    strip.text = element_text(
+      angle = 0, size = rel(1.2), hjust = .5, face = "bold"
+    ),
+    strip.background = element_blank(),
+    axis.text = element_text(size = rel(1), color = "black"),
+    axis.ticks = element_blank()
+  )
+
+ggsave(
+  plot = g5,
+  filename = "figuras/lconnect_lulc.png",
+  width = 25,
+  height = 33,
+  units = "cm"
+)
+```
+
+::: {.callout-note appearance="simple" collapse=true icon=false title="Mostrar figura"}
+
+![El eje horizontal indica la distancia máxima. En el eje vertival se lee el valor del íncide de cada panel.](figuras/lconnect_lulc.png)
+
+:::
+
+```{r}
+#| column: page
+
+m_conect_lulc |> 
+  pivot_wider(
+    names_from = tipo,
+    values_from = metric
+  ) |> 
+  gt() |> 
+  cols_label(
+    max_d = "Distancia Máx."
+  ) |> 
+  sub_missing() |> 
+  fmt_auto() |> 
+  tab_style(
+    locations = cells_body(),
+    style = cell_text(font = "JetBrains Mono")
+  ) |> 
+  tab_source_note(
+    source_note = md(
+      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/m_conect_lulc.csv)")
+    )
+  ) |>
+  tab_options(
+    table.width = 1000,
+    table.border.top.style = "hidden",
+    table.background.color = "transparent"
   ) |>
   as_raw_html()
 ```
 
-<!-- En todos los casos, `Urban` y `Agriculture` presentan un porcentaje del total de nutrientes superior a su superficie ocupada, excepto para `N_TOTAL_EXPORT`. -->
+## Métricas de conectividad por escenarios
 
-<!-- Las clases `Grassland` y `Forest`, en todos los nutrientes, generaron menor proporción del total, respecto del área ocupada correspondiente. -->
+A partir de los diez escenarios propuestos, se calcularon las métricas de conectividad.
+
+```{r}
+#| eval: false
+
+v_archivos <- list.files(
+  path = "vectores/",
+  pattern = "land-",
+  full.names = TRUE
+)
+
+max_distancias <- c(0, 10^(1:5))
+
+grilla <- expand_grid(
+  archivos = v_archivos,
+  max_d = max_distancias
+)
+
+{
+  ti <- Sys.time()
+  v_lconnect <- purrr::pmap(
+    list(grilla$archivos, grilla$max_d),
+    purrr::in_parallel(
+      \(x, y) {
+        print(paste0(x, " -- ", as.character(y)))
+        lconnect::upload_land(
+          x,
+          habitat = -1:2,
+          max_dist = y
+        )
+      }
+    )
+  )
+  tf <- Sys.time()
+  delta <- tf - ti # 5H 26M
+}
+
+saveRDS(v_lconnect, "vectores/v_lconnect.rds")
+v_lconnect <- readRDS("vectores/v_lconnect.rds")
+
+m_conect <- purrr::map2(
+  v_lconnect,
+  rep(1:10, each = 6),
+  \(x, y) {
+    metricas <- lconnect::con_metric(x, m)
+    tibble(
+      metric = metricas,
+      tipo = names(metricas)
+    ) |>
+      mutate(max_d = x$max_dist) |>
+      mutate(esc = y)
+  }
+) |>
+  purrr::list_rbind() |>
+  mutate(max_d = factor(max_d)) |>
+  mutate(tipo = factor(tipo, levels = m))
+
+write_csv(m_conect, "datos/m_conect.csv")
+```
+
+La siguiente figura muestra las métricas de conectividad para cada escenario y distancia máxima, comparada con las calculadas para el uso de suelo original.
+
+```{r}
+#| column: screen-inset
+
+m_conect <- read_csv("datos/m_conect.csv", show_col_types = FALSE)
+m_conect_lulc <- read_csv("datos/m_conect_lulc.csv", show_col_types = FALSE) |>
+  rename(metric_lulc = metric)
+
+m_conect_ref_tbl <- m_conect |> 
+  mutate(esc = paste0("Esc. ", esc)) |>
+  pivot_wider(
+    names_from = esc,
+    values_from = metric,
+    id_cols = c(tipo, max_d)
+  ) |>
+  full_join(
+    m_conect_lulc, by = join_by(tipo, max_d)
+  ) |> 
+  mutate(tipo = m_nombres[tipo]) |>
+  mutate(
+    max_d = format(
+      max_d, big.mark = ".", decimal.mark = ",", scientific = FALSE
+    )
+  ) |> 
+  # mutate(max_d = factor(max_d)) |> 
+  mutate(max_d = paste0("Distancia Máx: ", max_d))
+
+m_conect_ref_tbl |> 
+  gt(groupname_col = "max_d", rowname_col = "tipo") |>
+  fmt_auto(lg_num_pref = "suf") |>
+  sub_missing() |> 
+  tab_style(
+    locations = cells_body(),
+    style = cell_text(font = "JetBrains Mono")
+  ) |>
+  tab_style(
+    locations = cells_row_groups(),
+    style = list(
+      cell_fill(color = alpha("darkviolet", .2)),
+      cell_text(weight = "bold")
+    )
+  ) |> 
+  tab_style(
+    style = cell_text(
+      weight = "bold", decorate = "underline", color = "#8E063B"
+    ),
+    locations = purrr::map(
+      1:nrow(m_conect_ref_tbl),
+      \(fila) {
+        cells_body(
+          columns = which(
+            m_conect_ref_tbl[fila, 3:12] > m_conect_ref_tbl$metric_lulc[fila]*1.001
+          )+2,
+          rows = fila
+        )
+      }
+    )
+  ) |>
+  tab_style(
+    locations = cells_body(columns = "metric_lulc"),
+    style = cell_fill(color = "grey97")
+  ) |>
+  tab_style(
+    locations = cells_column_labels(columns = "metric_lulc"),
+    style = cell_fill(color = "grey97")
+  ) |>
+  cols_label(
+    metric_lulc = "Ref."
+  ) |> 
+  tab_footnote(
+    footnote = html(
+      "<b style='font-family: JetBrains Mono; color: #8E063B'>Texto
+      destacado</b> indica que, en ese escenario, el nutriente asociado
+      a la clase es <b><u>mayor</u></b> al porcentaje de superficie
+      correspondiente."
+    )
+  ) |>
+  tab_source_note(
+    source_note = md(
+      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/m_conect.csv)")
+    )
+  ) |>
+  tab_options(
+      table.width = 1500,
+    table.border.top.style = "hidden",
+    table.background.color = "transparent"
+  ) |> 
+  cols_width("metric_lulc" ~ pct(9))
+```

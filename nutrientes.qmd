@@ -1990,7 +1990,7 @@ m_conect_lulc |>
     dec_mark = ",",
     sep_mark = "."
   ) |> 
-  fmt_auto(lg_num_pref = "suf") |> 
+  fmt_auto(lg_num_pref = "sci") |> 
   tab_style(
     locations = cells_body(),
     style = cell_text(font = "JetBrains Mono")
@@ -2099,12 +2099,11 @@ m_conect_ref_tbl <- m_conect |>
       max_d, big.mark = ".", decimal.mark = ",", scientific = FALSE
     )
   ) |> 
-  # mutate(max_d = factor(max_d)) |> 
   mutate(max_d = paste0("Distancia Máx: ", max_d))
 
 m_conect_ref_tbl |> 
   gt(groupname_col = "max_d", rowname_col = "tipo") |>
-  fmt_auto(lg_num_pref = "suf") |>
+  fmt_auto(lg_num_pref = "sci") |>
   sub_missing() |> 
   tab_style(
     locations = cells_body(),

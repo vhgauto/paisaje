@@ -2143,6 +2143,10 @@ m_conect_ref_tbl |>
   cols_label(
     metric_lulc = "Ref."
   ) |> 
+  tab_spanner(
+    label = "Escenario",
+    columns = `Esc. 1`:`Esc. 10`
+  ) |> 
   tab_footnote(
     footnote = html(
       "<b style='font-family: JetBrains Mono; color: #8E063B'>Texto

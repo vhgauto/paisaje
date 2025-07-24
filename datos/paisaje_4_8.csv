@@ -1,0 +1,44 @@
+metric,Conec. 8,Conec. 4
+[Aggregation index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_ai.html),96.01495149615208,96.57791639645748
+[Conditional entropy \[H(y|x)\]](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_condent.html),0.28179870705386834,0.2497975305739666
+[Contagion](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_contag.html),52.96358852516365,53.76330818357032
+[Disjunct core area density](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_dcad.html),15.29869673301351,15.57526889612004
+[Edge Density](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_ed.html),79.34289882999299,68.08657722351988
+[Effective Mesh Size](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_mesh.html),131779.21225416692,119695.97635691609
+[Interspersion and Juxtaposition index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_iji.html),82.84036706879868,83.62392848994698
+"[Joint entropy \[H(x, y)\]](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_joinent.html)",1.8814564589934537,1.849467672657187
+[Landscape division index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_division.html),0.8018136933898335,0.8199859973019008
+[Landscape shape index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_lsi.html),164.96250536513585,142.0162180391195
+[Largest patch index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_lpi.html),38.49146232711158,38.29698051175386
+[Marginal entropy \[H(x)\]](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_ent.html),1.5996577519395854,1.5996701420832204
+[Mean fractal dimension index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_frac_mn.html),1.0997280295661278,1.075624844667887
+[Mean number of disjunct core areas](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_dcore_mn.html),0.5482202042521088,0.5054096656597254
+[Mean of Contiguity index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_contig_mn.html),0.2153112899983692,0.3273539272571706
+[Mean of core area index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_cai_mn.html),4.092004270093205,7.921529330949778
+[Mean of core area](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_core_mn.html),3.2657835143219005,2.9619688547710945
+[Mean of patch area](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_area_mn.html),3.5834438306701517,3.2449498562790673
+[Mean of related circumscribing circle](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_circle_mn.html),0.5332362933524549,0.5194241175749972
+[Mean perimeter-area ratio](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_para_mn.html),0.3117269892833187,0.2565929171161862
+[Mean radius of gyration](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_gyrate_mn.html),13.395923302409315,14.050100812166106
+[Mean shape index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_shape_mn.html),1.6012460032888045,1.378119542915853
+[Modified Simpson's diversity index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_msidi.html),0.9475979118424392,0.9475979118424392
+[Modified Simpson's evenness index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_msiei.html),0.6835474040859121,0.6835474040859121
+"[Mutual information \[I(y,x)\]](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_mutinf.html)",1.317859044885717,1.349872611509254
+[Number of disjunct core areas](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_ndca.html),101725,103564
+[Number of patches](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_np.html),185555,204911
+[Patch Cohesion Index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_cohesion.html),99.94430471914512,99.93573665241485
+[Patch density](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_pd.html),27.906116218179623,30.817117191039873
+[Patch richness density](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_prd.html),6.015707734780441e-4,6.01570773478044e-4
+[Patch richness](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_pr.html),4,4
+[Percentage of Like Adjacencies](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_pladj.html),96.03128058550058,96.59431896798168
+[Perimeter-Area Fractal Dimension](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_pafrac.html),1.5388234613844076,1.346571869433771
+[Relative mutual information](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_relmutinf.html),0.8238381261790609,0.8438443501554265
+[Relative patch richness](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_rpr.html),NA,NA
+[Shannon's diversity index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_shdi.html),1.108842529041463,1.108842529041463
+[Shannons's evenness index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_shei.html),0.7998608088874475,0.7998608088874475
+[Simpson's diversity index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_sidi.html),0.6123288738659263,0.6123288738659263
+[Simpson's evenness index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_siei.html),0.8164384984879017,0.8164384984879017
+[Splitting index](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_split.html),5.045757283155822,5.555123407133479
+[Total area](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_ta.html),664925.9199999998,664925.9199999999
+[Total core area](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_tca.html),605982.46,606939.9999999999
+[Total edge](https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_te.html),52757150,45272530

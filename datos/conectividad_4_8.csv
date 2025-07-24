@@ -1,0 +1,61 @@
+tipo,max_d,Conec. 8,Conec. 4
+Number of components,Distancia Máx:       0,6,6
+Number of links,Distancia Máx:       0,0,0
+Size of the Largest Component,Distancia Máx:       0,6643782083.71733,6643782083.717339
+Mean Size of Components,Distancia Máx:       0,1107323476.103793,1107323476.103794
+Class coincidence probability,Distancia Máx:       0,0.9999522063313744,0.9999522063313744
+Landscape coincidence probability,Distancia Máx:       0,0.2413732377966511,0.24137323779665168
+Characteristic path length,Distancia Máx:       0,NA,NA
+Expected cluster size,Distancia Máx:       0,6643623318.315085,6643623318.315095
+Area-weighted flux,Distancia Máx:       0,NA,NA
+Integral index of connectivity,Distancia Máx:       0,0,0
+Number of components,Distancia Máx:      10,5,5
+Number of links,Distancia Máx:      10,2,2
+Size of the Largest Component,Distancia Máx:      10,6643782483.397394,6643782483.397403
+Mean Size of Components,Distancia Máx:      10,1328788171.324551,1328788171.324553
+Class coincidence probability,Distancia Máx:      10,0.999952326642654,0.999952326642654
+Landscape coincidence probability,Distancia Máx:      10,0.2413732668379622,0.2413732668379628
+Characteristic path length,Distancia Máx:      10,1,1
+Expected cluster size,Distancia Máx:      10,6643624117.656112,6643624117.65612
+Area-weighted flux,Distancia Máx:      10,4608902285658.758,4608902285658.936
+Integral index of connectivity,Distancia Máx:      10,0.24137323766190083,0.24137323766190144
+Number of components,Distancia Máx:     100,2,2
+Number of links,Distancia Máx:     100,5,5
+Size of the Largest Component,Distancia Máx:     100,6643783882.277618,6643783882.277627
+Mean Size of Components,Distancia Máx:     100,3321970428.311378,3321970428.3113823
+Class coincidence probability,Distancia Máx:     100,0.9999527477321848,0.9999527477321848
+Landscape coincidence probability,Distancia Máx:     100,0.2413733684825636,0.24137336848256424
+Characteristic path length,Distancia Máx:     100,1.6,1.6
+Expected cluster size,Distancia Máx:     100,6643626915.35005,6643626915.350059
+Area-weighted flux,Distancia Máx:     100,165369604907392.8,165369604907412.56
+Integral index of connectivity,Distancia Máx:     100,0.24137328848420203,0.24137328848420267
+Number of components,Distancia Máx:   1.000,1,1
+Number of links,Distancia Máx:   1.000,6,6
+Size of the Largest Component,Distancia Máx:   1.000,6643940856.622756,6643940856.622765
+Mean Size of Components,Distancia Máx:   1.000,6643940856.622756,6643940856.622765
+Class coincidence probability,Distancia Máx:   1.000,1,1
+Landscape coincidence probability,Distancia Máx:   1.000,0.24138477446057297,0.24138477446057355
+Characteristic path length,Distancia Máx:   1.000,1.6666666666666667,1.6666666666666667
+Expected cluster size,Distancia Máx:   1.000,6643940856.622756,6643940856.622765
+Area-weighted flux,Distancia Máx:   1.000,1623584591135046,1623584591135221.3
+Integral index of connectivity,Distancia Máx:   1.000,0.2413789916072665,0.2413789916072671
+Number of components,Distancia Máx:  10.000,1,1
+Number of links,Distancia Máx:  10.000,8,8
+Size of the Largest Component,Distancia Máx:  10.000,6643940856.622756,6643940856.622765
+Mean Size of Components,Distancia Máx:  10.000,6643940856.622756,6643940856.622765
+Class coincidence probability,Distancia Máx:  10.000,1,1
+Landscape coincidence probability,Distancia Máx:  10.000,0.24138477446057297,0.24138477446057355
+Characteristic path length,Distancia Máx:  10.000,1.8571428571428572,1.8571428571428572
+Expected cluster size,Distancia Máx:  10.000,6643940856.622756,6643940856.622765
+Area-weighted flux,Distancia Máx:  10.000,2057423083967193.3,2057423083967414.8
+Integral index of connectivity,Distancia Máx:  10.000,0.2413789964475724,0.241378996447573
+Number of components,Distancia Máx: 100.000,1,1
+Number of links,Distancia Máx: 100.000,16,16
+Size of the Largest Component,Distancia Máx: 100.000,6643940856.622756,6643940856.622765
+Mean Size of Components,Distancia Máx: 100.000,6643940856.622756,6643940856.622765
+Class coincidence probability,Distancia Máx: 100.000,1,1
+Landscape coincidence probability,Distancia Máx: 100.000,0.24138477446057297,0.24138477446057355
+Characteristic path length,Distancia Máx: 100.000,1.3333333333333333,1.3333333333333333
+Expected cluster size,Distancia Máx: 100.000,6643940856.622756,6643940856.622765
+Area-weighted flux,Distancia Máx: 100.000,2106800775694837.3,2106800775695064
+Integral index of connectivity,Distancia Máx: 100.000,0.2413789964475749,0.24137899644757552

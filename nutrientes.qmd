@@ -2197,3 +2197,452 @@ Métricas de conectividad por escenario y distancia máxima.
 
 :::
 
+# Cambio de conectividad
+
+Con la intención de verificar métricas por clase, paisaje y conectividad, se creó un nuevo escenario, con dependencia del terreno 0,5, adoptando una conectividad 8.
+
+```r
+connectivity = 4
+terrain_dependency = 0.5
+```
+
+Se creó el escenario.
+
+```{r}
+#| eval: false
+
+clases <- c(30, 40, 50) # Grassland, Agriculture, Urban
+
+estructura_4 <- flsgen_extract_structure_from_raster(
+  raster_file = r,
+  focal_classes = clases,
+  connectivity = 4
+)
+
+r_con4 <- flsgen_generate(
+  estructura_4,
+  terrain_file = dem,
+  terrain_dependency = .5,
+  connectivity = 4,
+  epsg = "EPSG:22174",
+  resolution_x = res(r)[1],
+  resolution_y = res(r)[2],
+  x = ext(dem)$"xmin",
+  y = ext(dem)$"ymax"
+)
+
+writeRaster(r_con4, "rasters/r_con4.tif", overwrite = TRUE)
+```
+
+::: {#fig-con4}
+
+```{r}
+r_con4 <- rast("rasters/r_con4.tif")
+
+# incorporo categorías y colores
+levels(r_con4) <- d_r
+coltab(r_con4) <- col_r_df
+
+par(bg = "#FAFAFA")
+plot(
+  r_con4, axes = FALSE, mar = c(1, 1, 1, 8),
+  main = "Dependencia del terreno: 0,5\nConectividad: 4",
+  background = "#FAFAFA"
+)
+```
+
+Mapa de clases considerando una conectividad 4.
+
+:::
+
+```{r}
+#| eval: false
+
+# métricas de clase
+f_loop_clase_con4 <- function() {
+  map2(
+    .x = r_con4,
+    .y = funciones_clase,
+    ~funcion_generica_clase(raster = .x, funcion = .y),
+    .progress = TRUE
+  ) |>
+    list_rbind()
+}
+
+metrica_clase_con4 <- f_loop_clase_con4()
+metrica_clase_con4 |> 
+  full_join(rename(d_r, class = value), by = join_by(class)) |> 
+  select(class, tipo, metric, value) |> 
+  write_csv("datos/con4_cla.csv")
+
+# métricas de paisaje
+f_loop_paisaje_con4 <- function() {
+  map2(
+    .x = r_con4,
+    .y = funciones_paisaje,
+    ~funcion_generica_paisaje(raster = .x, funcion = .y),
+    .progress = TRUE
+  ) |>
+    list_rbind()
+}
+
+metrica_paisaje_con4 <- f_loop_paisaje_con4()
+metrica_paisaje_con4 |> 
+  select(metric, value) |> 
+  write_csv("datos/con4_pai.csv")
+
+# métricas de conectividad
+v_con4 <- as.polygons(r_con4) |> 
+  project("EPSG:32720")
+writeVector(v_con4, "vectores/v_con4.gpkg")
+
+max_distancias <- c(0, 10^(1:5))
+
+l_con4 <- purrr::map(
+  max_distancias,
+  purrr::in_parallel(
+    \(x) {
+      print(x)
+      lconnect::upload_land(
+        land_path = "vectores/v_con4.gpkg",
+        habitat = arrange(d_r, value)$tipo,
+        max_dist = x
+      )
+    }
+  )
+)
+
+saveRDS(l_con4, "vectores/l_con4.rds")
+l_con4 <- readRDS("vectores/l_con4.rds")
+
+m_conect_con4 <- purrr::map(
+  l_con4,
+  \(x, y) {
+    metricas <- lconnect::con_metric(x, m)
+    tibble(
+      metric = metricas,
+      tipo = names(metricas)
+    ) |>
+      mutate(max_d = x$max_dist)
+  }
+) |>
+  purrr::list_rbind() |>
+  mutate(max_d = factor(max_d)) |>
+  mutate(tipo = factor(tipo, levels = m))
+
+write_csv(m_conect_con4, "datos/m_conect_con4.csv")
+```
+
+## Métricas de <u>clase</u>
+
+```{r}
+#| eval: false
+
+metrica_clase_con4 <- read_csv(
+  "datos/con4_cla.csv", show_col_types = FALSE
+) |> 
+  select(-class) |> 
+  mutate(conectividad = 4)
+
+clase_4_8 <- read_csv("datos/métricas_X_cla.csv", show_col_types = FALSE) |> 
+  filter(dependencia_terreno == .5) |> 
+  select(-dependencia_terreno) |> 
+  mutate(conectividad = 8) |> 
+  bind_rows(metrica_clase_con4) |> 
+  mutate(conectividad = paste0("Conec. ", conectividad)) |> 
+  pivot_wider(
+    names_from = c(tipo, conectividad),
+    values_from = value
+  ) |> 
+  mutate(
+    txt = map(metric, f_contenido_funcion)
+  ) |> 
+  mutate(
+    titulo = map_chr(txt, ~.x[16])
+  ) |> 
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+  mutate(
+    link = paste0(
+      "https://r-spatialecology.github.io/landscapemetrics/reference/lsm_c_",
+      metric,
+      ".html"
+    )
+  ) |> 
+  mutate(
+    metric = glue::glue("[{titulo}]({link})")
+  ) |> 
+  select(-c(txt, titulo, link)) |> 
+  arrange(metric) |> 
+  relocate(1, 2, 6, 3, 7, 4, 8, 5, 9)
+
+write_csv(clase_4_8, "datos/clase_4_8.csv")
+```
+
+La tabla muestra los valores de métricas de <u>clase</u>, para cada clase de suelo, considerando una dependencia del terreno 0,5, entre conectividad 4 y 8.
+
+::: {#tbl-4-8-clase}
+
+```{r}
+#| column: screen-inset
+
+clase_4_8 <- read_csv("datos/clase_4_8.csv", show_col_types = FALSE)
+
+clase_4_8 |> 
+  gt() |> 
+  fmt_auto(locale = "es", columns = -metric) |> 
+  fmt_url(columns = metric, color = "#8E063B") |> 
+  tab_style(
+    locations = cells_body(columns = "metric"),
+    style = cell_text(align = "left")
+  ) |> 
+  tab_style(
+    style = cell_text(
+      weight = "bold", decorate = "underline", color = "#8E063B"
+    ),
+    locations = purrr::map(
+      1:nrow(clase_4_8),
+      \(fila) {
+        cells_body(
+          columns = c(
+            which(clase_4_8[fila, 2] > clase_4_8[fila, 3])+1,
+            which(clase_4_8[fila, 4] > clase_4_8[fila, 5])+3,
+            which(clase_4_8[fila, 6] > clase_4_8[fila, 7])+5,
+            which(clase_4_8[fila, 8] > clase_4_8[fila, 9])+7,
+          ),
+          rows = fila
+        )
+      }
+    )
+  ) |>
+  tab_style(
+    locations = cells_body(columns = -metric),
+    style = cell_text(font = "JetBrains Mono")
+  ) |> 
+  tab_spanner(
+    columns = starts_with("Grassland"),
+    label = "Grassland"
+  ) |> 
+  tab_spanner(
+    columns = starts_with("Forest"),
+    label = "Forest"
+  ) |> 
+  tab_spanner(
+    columns = starts_with("Agriculture"),
+    label = "Agriculture"
+  ) |> 
+  tab_spanner(
+    columns = starts_with("Urban"),
+    label = "Urban"
+  ) |> 
+  cols_label(
+    ends_with("Conec. 8") ~ "Conec. 8",
+    ends_with("Conec. 4") ~ "Conec. 4",
+    metric ~ "Métrica"
+  ) |> 
+  tab_footnote(
+    footnote = html(
+      "<b style='font-family: JetBrains Mono; color: #8E063B'>Texto
+      destacado</b> indica que, para la clase correspondiente, la
+      conectividad 8 posee una métrica <b><u>mayor</u></b> a la conectividad 4."
+    )
+  ) |>
+  tab_source_note(
+    source_note = md(
+      glue::glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/clase_4_8.csv)")
+    )
+  ) |> 
+  tab_options(
+    table.border.top.style = "hidden",
+    table.background.color = "transparent"
+  )
+```
+
+Tabla comparativa de métricas de clase.
+
+:::
+
+## Métricas de <u>paisaje</u>
+
+```{r}
+#| eval: false
+
+metrica_paisaje_con4 <- read_csv(
+  "datos/con4_pai.csv", show_col_types = FALSE
+) |> 
+  mutate(conectividad = 4)
+
+paisaje_4_8 <- read_csv("datos/métricas_X_pai.csv", show_col_types = FALSE) |> 
+  filter(dependencia_terreno == .5) |> 
+  select(-dependencia_terreno) |> 
+  mutate(conectividad = 8) |> 
+  bind_rows(metrica_paisaje_con4) |> 
+  mutate(conectividad = paste0("Conec. ", conectividad)) |> 
+  pivot_wider(
+    names_from = conectividad,
+    values_from = value
+  ) |> 
+  mutate(
+    txt = map(metric, f_contenido_funcion2)
+  ) |> 
+  mutate(
+    titulo = map_chr(txt, ~.x[16])
+  ) |> 
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+  mutate(
+    link = paste0(
+      "https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_",
+      metric,
+      ".html"
+    )
+  ) |> 
+  mutate(
+    metric = glue::glue("[{titulo}]({link})")
+  ) |> 
+  select(1:3) |> 
+  arrange(metric)
+
+write_csv(paisaje_4_8, "datos/paisaje_4_8.csv")
+```
+
+La tabla muestra los valores de métricas de <u>paisaje</u>, para cada clase de suelo, considerando una dependencia del terreno 0,5, entre conectividad 4 y 8.
+
+::: {#tbl-4-8-paisaje}
+
+```{r}
+paisaje_4_8 <- read_csv("datos/paisaje_4_8.csv", show_col_types = FALSE)
+
+paisaje_4_8 |> 
+  gt() |> 
+  fmt_auto(locale = "es", columns = -metric) |> 
+  fmt_url(columns = metric, color = "#8E063B") |> 
+  tab_style(
+    locations = cells_body(columns = "metric"),
+    style = cell_text(align = "left")
+  ) |> 
+  tab_style(
+    style = cell_text(
+      weight = "bold", decorate = "underline", color = "#8E063B"
+    ),
+    locations = purrr::map(
+      1:nrow(paisaje_4_8),
+      \(fila) {
+        cells_body(
+          columns = c(
+            which(paisaje_4_8[fila, 2] > paisaje_4_8[fila, 3])+1
+          ),
+          rows = fila
+        )
+      }
+    )
+  ) |>
+  tab_style(
+    locations = cells_body(columns = -metric),
+    style = cell_text(font = "JetBrains Mono")
+  ) |> 
+  cols_label(
+    metric ~ "Métrica"
+  ) |> 
+  tab_footnote(
+    footnote = html(
+      "<b style='font-family: JetBrains Mono; color: #8E063B'>Texto
+      destacado</b> indica que, para la métrica correspondiente, la
+      conectividad 8 es <b><u>mayor</u></b> a la conectividad 4."
+    )
+  ) |>
+  tab_source_note(
+    source_note = md(
+      glue::glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/paisaje_4_8.csv)")
+    )
+  ) |> 
+  sub_missing() |> 
+  tab_options(
+    table.border.top.style = "hidden",
+    table.background.color = "transparent"
+  ) |> 
+  as_raw_html()
+```
+
+Tabla comparativa de métricas de paisaje.
+
+:::
+
+## Métricas de <u>conectividad</u>
+
+```{r}
+#| eval: false
+
+metrica_conectividad_con4 <- read_csv(
+  "datos/m_conect_con4.csv", show_col_types = FALSE
+) |> 
+  mutate(conectividad = 4)
+
+conectividad_4_8 <- read_csv("datos/m_conect.csv", show_col_types = FALSE) |> 
+  filter(esc == 5) |> 
+  select(-esc) |> 
+  mutate(conectividad = 8) |> 
+  bind_rows(metrica_conectividad_con4) |> 
+  mutate(conectividad = paste0("Conec. ", conectividad)) |> 
+  pivot_wider(
+    names_from = conectividad,
+    values_from = metric
+  ) |> 
+  mutate(tipo = m_nombres[tipo]) |>
+  mutate(
+    max_d = format(
+      max_d, big.mark = ".", decimal.mark = ",", scientific = FALSE
+    )
+  ) |> 
+  mutate(max_d = paste0("Distancia Máx: ", max_d))
+
+write_csv(conectividad_4_8, "datos/conectividad_4_8.csv")
+```
+
+La tabla muestra los valores de métricas de <u>conectividad</u>, considerando una dependencia del terreno 0,5, entre conectividad 4 y 8.
+
+::: {#tbl-4-8-conectividad}
+
+```{r}
+conectividad_4_8 <- read_csv("datos/conectividad_4_8.csv", show_col_types = FALSE)
+
+conectividad_4_8 |> 
+  gt(rowname_col = "tipo", groupname_col = "max_d") |> 
+  fmt_auto(locale = "es") |> 
+  sub_missing() |> 
+  tab_style(
+    locations = cells_row_groups(),
+    style = list(
+      cell_fill(color = alpha("#8E063B", .2)),
+      cell_text(weight = "bold")
+    )
+  ) |> 
+  tab_style(
+    locations = cells_body(),
+    style = cell_text(font = "JetBrains Mono")
+  ) |> 
+  tab_source_note(
+    source_note = md(
+      glue::glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/conectividad_4_8.csv)")
+    )
+  ) |> 
+  tab_options(
+    table.border.top.style = "hidden",
+    table.background.color = "transparent"
+  ) |> 
+  as_raw_html()
+```
+
+Tabla comparativa de métricas de conectividad
+
+:::
+
+
+
+
+
+
+
+
+
+
+
+

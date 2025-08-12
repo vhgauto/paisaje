@@ -8,6 +8,8 @@ format:
     smooth-scroll: true
     toc: true
     lang: es
+    include-in-header:
+      - extras/favicon.html
     tbl-cap-location: top
     language:
       es:
@@ -52,6 +54,315 @@ crossref:
   chapters: true
 ---
 
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: false
+#| echo: false
+
+library(tidyverse)
+library(glue)
+library(gt)
+library(landscapemetrics)
+library(NLMR)
+library(rflsgen)
+library(patchwork)
+library(terra)
+```
+
+# Figuras y tablas {.unnumbered}
+
+Las figuras a continuación muestran las cantidades de nutrientes por clase y escenario.
+
+```{r}
+clases_orden <- c("Grassland", "Forest", "Urban", "Agriculture")
+clases_color <- c("#C1D75B", "#58987D", "#75E081", "#8F66B7")
+
+n_p_basin <- readxl::read_xlsx("datos/n_p_basin.xlsx") |> 
+  janitor::clean_names() |> 
+  mutate(
+    nut = if_else(str_detect(x1, "N_total"), "N", "P"),
+    esc = case_when(
+      nut == "N" ~ str_remove(x1, "N_totalS"),
+      nut == "P" ~ str_remove(x1, "P_SUR_S")
+    )
+  ) |> 
+  select(nut, esc, forest, grassland, agriculture, urban) |> 
+  mutate(esc = as.numeric(esc)) |> 
+  pivot_longer(
+    cols = -c(nut, esc),
+    values_to = "valor",
+    names_to = "clase"
+  ) |> 
+  mutate(clase = str_to_sentence(clase)) |> 
+  mutate(clase = factor(clase, clases_orden)) |> 
+  mutate(esc = factor(esc))
+
+f_gg_nutriente <- function(X) {
+  g <- n_p_basin |> 
+  filter(nut == X) |> 
+  ggplot(aes(esc, valor, fill = clase)) +
+  geom_col(color = NA, show.legend = FALSE) +
+  facet_wrap(vars(clase), scales = "free", nrow = 1) +
+  scale_y_continuous(
+    labels = scales::label_number(decimal.mark = ".", big.mark = ","),
+    expand = expansion(add = c(0, 0), mult = c(0, .05))
+  ) +
+  scale_fill_manual(
+    breaks = clases_orden,
+    values = clases_color
+  ) +
+  labs(x = "Escenario") +
+  theme_bw(base_size = 7) +
+  theme(
+    aspect.ratio = 1,
+    plot.background = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text = element_text(color = "black"),
+    axis.text.y = element_text(hjust = 1),
+    panel.background = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_line(color = "black", linewidth = .1),
+    panel.grid.major.x = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(color = "black")
+  )
+  
+  ggsave(
+    plot = g,
+    filename = paste0("figuras/nutriente_", X, ".png"),
+    width = 15,
+    height = 4,
+    units = "cm"
+  )
+}
+
+f_gg_nutriente("N")
+f_gg_nutriente("P")
+```
+
+Cantidad de nitrógeno.
+
+::: {.column-page}
+
+![Cantidad de nitrógeno por clase y escenario.](figuras/nutriente_N.png){#fig-nutriente-n}
+
+:::
+
+Cantidad de fósforo.
+
+::: {.column-page}
+
+![Cantidad de fósforo por clase y escenario.](figuras/nutriente_P.png){#fig-nutriente-p}
+
+:::
+
+```{r}
+nutri_files <- list.files(
+  path = "datos/", pattern = "nutriente", full.names = TRUE
+)[2:5]
+nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
+
+area_clase_tbl <- read_csv("datos/area_por_clase.csv", show_col_types = FALSE)
+
+f_gg_nutriente_por <- function(X) {
+  g <- nutri_tbl |> 
+  mutate(tipo = fct_reorder(tipo, sum)) |> 
+  mutate(
+    porcentaje = sum/sum(sum), .by = c(esc, prod)
+  ) |> 
+  arrange(tipo) |> 
+  mutate(esc = factor(esc)) |> 
+  mutate(fraccion = sum/sum(sum), .by = c(esc, prod)) |> 
+  filter(prod == X) |> 
+  ggplot(aes(esc, fraccion, fill = tipo)) +
+  geom_col(show.legend = FALSE) +
+  geom_hline(
+    data = area_clase_tbl, aes(yintercept = area_prop), color = "black",
+    linetype = 2, linewidth = .4
+  ) +
+  geom_label(
+    data = area_clase_tbl, 
+    aes(
+      label = paste0(format(area_prop*100, digits = 2), "%"), 
+      y = area_prop, x = 10
+    ),
+    vjust = -.1, hjust = .5, size = 2, fill = alpha("white", .5),
+    label.size = unit(0, "mm"), inherit.aes = FALSE
+  ) +
+  facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+  scale_y_continuous(
+    labels = scales::label_percent(),
+    expand = expansion(mult = c(0, .1), add = c(0, 0))
+  ) +
+  scale_fill_manual(
+    breaks = clases_orden,
+    values = clases_color
+  ) +
+  coord_cartesian(clip = "off") +
+  labs(x = "Escenario") +
+  theme_bw(base_size = 7) +
+  theme(
+    aspect.ratio = 1,
+    plot.background = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text = element_text(color = "black"),
+    axis.text.x = element_text(margin = margin(t = 1)),
+    axis.text.y = element_text(hjust = 1),
+    panel.spacing.x = unit(8, "pt"),
+    panel.ontop = FALSE,
+    panel.background = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_line(color = "black", linewidth = .1),
+    panel.grid.major.x = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(color = "black")
+  )
+  
+  ggsave(
+    plot = g,
+    filename = paste0("figuras/", X, "_por.png"),
+    width = 15,
+    height = 4.25,
+    units = "cm"
+  )
+}
+
+f_gg_nutriente_por("n_total_export")
+f_gg_nutriente_por("p_surface_export")
+```
+
+Porcentaje de nitrógeno aportado por clase, por escenario, comparado con la proporción del área de la clase.
+
+::: {.column-page}
+
+![Procentaje de nitrógeno por clase y escenario.](figuras/n_total_export_por.png){#fig-nutriente-n-por}
+
+:::
+
+Porcentaje de fósforo aportado por clase, por escenario, comparado con la proporción del área de la clase.
+
+::: {.column-page}
+
+![Procentaje de fósforo por clase y escenario.](figuras/p_surface_export_por.png){#fig-nutriente-p-por}
+
+:::
+
+::: {#tbl-met-con-lulc}
+
+```{r}
+#| column: body-outset
+
+m_conect_lulc <- read_csv("datos/m_conect_lulc.csv", show_col_types = FALSE) |>
+  rename(metric_lulc = metric)
+
+m_conect_lulc |> 
+  pivot_wider(
+    names_from = tipo,
+    values_from = metric_lulc
+  ) |> 
+  gt() |> 
+  sub_missing() |> 
+  fmt_auto(
+    columns = c(max_d, CCP)
+  ) |> 
+  fmt_number(
+    columns = c(LCP, CPL, IIC), decimals = 1,
+    drop_trailing_zeros = TRUE
+  ) |> 
+  fmt_engineering(
+    columns = c(SLC, MSC, ECS, AWF),
+    exp_style = "E1",
+    decimals = 1
+  ) |> 
+  cols_label(
+    max_d = "Distancia Máx."
+  ) |> 
+  tab_style(
+    locations = cells_body(),
+    style = cell_text(font = "JetBrains Mono")
+  ) |> 
+  tab_source_note(
+    source_note = md(
+      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/m_conect_lulc.csv)")
+    )
+  ) |>
+  cols_label(
+    max_d = "Distancia Máx."
+  ) |> 
+  tab_options(
+    table.border.top.style = "hidden",
+    table.width = 1000,
+    table.background.color = "transparent"
+  ) |>
+  as_raw_html()
+```
+
+Métricas de conectividad para escenario original.
+
+:::
+
+::: {#tbl-met-con-esc}
+
+```{r}
+#| column: body-outset
+
+m_conect <- read_csv("datos/m_conect.csv", show_col_types = FALSE)
+
+m_conect |> 
+  mutate(esc = paste0("Esc. ", esc)) |> 
+  reframe(
+    m = mean(metric),
+    .by = c(max_d, tipo)
+  ) |> 
+  pivot_wider(
+    names_from = tipo,
+    values_from = m
+  ) |> 
+  gt() |> 
+  sub_missing() |> 
+  fmt_auto(
+    columns = c(max_d, CCP)
+  ) |> 
+  fmt_number(
+    columns = c(LCP, CPL, IIC), decimals = 1,
+    drop_trailing_zeros = TRUE
+  ) |> 
+  fmt_engineering(
+    columns = c(SLC, MSC, ECS, AWF),
+    decimals = 1,
+    exp_style = "E1"
+  ) |> 
+  cols_label(
+    max_d = "Distancia Máx."
+  ) |> 
+  tab_style(
+    locations = cells_body(),
+    style = cell_text(font = "JetBrains Mono")
+  ) |> 
+  tab_source_note(
+    source_note = md(
+      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/m_conect.csv)")
+    )
+  ) |>
+  tab_options(
+    table.border.top.style = "hidden",
+    table.background.color = "transparent",
+    table.width = 1000
+  ) |>
+  as_raw_html()
+```
+
+Métricas de conectividad por escenario y distancia máxima.
+
+:::
+
+# Lectura de datos
+
 El paquete usado es [`{rflsgen}`](https://dimitri-justeau.github.io/rflsgen/), **Neutral Landscape Generator with Targets on Landscape Indices**.
 
 ::: {.callout-caution}
@@ -78,6 +389,7 @@ Los paquetes usados son los siguientes:
 ```{r}
 #| warning: false
 #| message: false
+#| eval: false
 #| code-fold: false
 
 library(tidyverse)
@@ -89,9 +401,6 @@ library(rflsgen)
 library(patchwork)
 library(terra)
 ```
-
-
-# Lectura de datos
 
 Inicialmente hay que leer los ráster de uso de suelo (`r`) y modelo digital de elevación (`dem`).
 
@@ -1490,11 +1799,6 @@ walk(
 La lectura de los resultados permitió generar la siguiente figura, que muestra la proporción de nutrientes para cada clase, según el escenario dado.
 
 ```{r}
-nutri_files <- list.files(
-  path = "datos/", pattern = "nutriente", full.names = TRUE
-)[2:5]
-nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
-
 f_gg_nutrientes <- function(nutriente) {
   nutri_tbl |>
     filter(prod == nutriente) |>
@@ -1645,91 +1949,6 @@ Tabla con los valores de nutrientes por clase, por escenario.
 
 :::
 
-Las figuras a continuación muestran las cantidades de nutrientes por clase y escenario.
-
-```{r}
-clases_orden <- c("Grassland", "Forest", "Urban", "Agriculture")
-clases_color <- c("#E5FB7A", "#73B298", "#8FFC9C", "#C29AEA")
-
-n_p_basin <- readxl::read_xlsx("datos/n_p_basin.xlsx") |> 
-  janitor::clean_names() |> 
-  mutate(
-    nut = if_else(str_detect(x1, "N_total"), "N", "P"),
-    esc = case_when(
-      nut == "N" ~ str_remove(x1, "N_totalS"),
-      nut == "P" ~ str_remove(x1, "P_SUR_S")
-    )
-  ) |> 
-  select(nut, esc, forest, grassland, agriculture, urban) |> 
-  mutate(esc = as.numeric(esc)) |> 
-  pivot_longer(
-    cols = -c(nut, esc),
-    values_to = "valor",
-    names_to = "clase"
-  ) |> 
-  mutate(clase = str_to_sentence(clase)) |> 
-  mutate(clase = factor(clase, clases_orden)) |> 
-  mutate(esc = factor(esc))
-
-f_gg_nutriente <- function(X) {
-  g <- n_p_basin |> 
-  filter(nut == X) |> 
-  ggplot(aes(esc, valor, fill = clase)) +
-  geom_col(color = NA, show.legend = FALSE) +
-  facet_wrap(vars(clase), scales = "free", nrow = 1) +
-  scale_y_continuous(
-    labels = scales::label_number(decimal.mark = ".", big.mark = ","),
-    expand = expansion(add = c(0, 0), mult = c(0, .05))
-  ) +
-  scale_fill_manual(
-    breaks = clases_orden,
-    values = clases_color
-  ) +
-  theme_bw(base_size = 7) +
-  theme(
-    aspect.ratio = 1,
-    plot.background = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title = element_blank(),
-    axis.text = element_text(color = "black"),
-    axis.text.y = element_text(hjust = 1),
-    panel.background = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.grid.major.y = element_line(color = "black", linewidth = .1),
-    panel.grid.major.x = element_blank(),
-    strip.background = element_blank(),
-    strip.text = element_text(color = "black")
-  )
-  
-  ggsave(
-    plot = g,
-    filename = paste0("figuras/nutriente_", X, ".png"),
-    width = 15,
-    height = 4,
-    units = "cm"
-  )
-}
-
-f_gg_nutriente("N")
-f_gg_nutriente("P")
-```
-
-Cantidad de nitrógeno.
-
-::: {.column-page}
-
-![Cantidad de nitrógeno por clase y escenario.](figuras/nutriente_N.png){#fig-nutriente-n}
-
-:::
-
-Cantidad de fósforo.
-
-::: {.column-page}
-
-![Cantidad de fósforo por clase y escenario.](figuras/nutriente_P.png){#fig-nutriente-p}
-
-:::
-
 ## Relación respecto del área
 
 Tomando las cantidades de nutrientes asignados a cada clase, se calculó la proporción respecto del total de nutrientes por escenario. Luego, se comparó con el porcentaje de superficie cubierta por la clase correspondiente.
@@ -1760,8 +1979,6 @@ area_clase_csv <- list.files(
   pattern = "area-clase-",
   full.names = TRUE
 )
-
-area_clase_tbl <- read_csv("datos/area_por_clase.csv", show_col_types = FALSE)
 
 nutri_files <- list.files(
   path = "datos/", pattern = "nutriente", full.names = TRUE
@@ -1972,10 +2189,6 @@ m_nombres <- c(
 )
 
 m_nombres <- set_names(m_nombres, m)
-
-m_conect <- read_csv("datos/m_conect.csv", show_col_types = FALSE)
-m_conect_lulc <- read_csv("datos/m_conect_lulc.csv", show_col_types = FALSE) |>
-  rename(metric_lulc = metric)
 ```
 
 El paquete utilizado fue [{lconnect}](https://github.com/FMestre1/lconnect) para el cálculo de las métricas de conectividad.
@@ -2082,57 +2295,6 @@ ggsave(
 
 :::
 
-::: {#tbl-met-con-lulc}
-
-```{r}
-#| column: body-outset
-
-m_conect_lulc |> 
-  pivot_wider(
-    names_from = tipo,
-    values_from = metric_lulc
-  ) |> 
-  gt() |> 
-  sub_missing() |> 
-  fmt_auto(
-    columns = c(max_d, CCP)
-  ) |> 
-  fmt_number(
-    columns = c(LCP, CPL, IIC), decimals = 1,
-    drop_trailing_zeros = TRUE
-  ) |> 
-  fmt_engineering(
-    columns = c(SLC, MSC, ECS, AWF),
-    exp_style = "E1",
-    decimals = 1
-  ) |> 
-  cols_label(
-    max_d = "Distancia Máx."
-  ) |> 
-  tab_style(
-    locations = cells_body(),
-    style = cell_text(font = "JetBrains Mono")
-  ) |> 
-  tab_source_note(
-    source_note = md(
-      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/m_conect_lulc.csv)")
-    )
-  ) |>
-  cols_label(
-    max_d = "Distancia Máx."
-  ) |> 
-  tab_options(
-    table.border.top.style = "hidden",
-    table.width = 1000,
-    table.background.color = "transparent"
-  ) |>
-  as_raw_html()
-```
-
-Métricas de conectividad para escenario original.
-
-:::
-
 ## Métricas de conectividad por escenarios
 
 A partir de los diez escenarios propuestos, se calcularon las métricas de conectividad.
@@ -2196,144 +2358,6 @@ write_csv(m_conect, "datos/m_conect.csv")
 ```
 
 La siguiente figura muestra las métricas de conectividad para cada escenario y distancia máxima, comparada con las calculadas para el uso de suelo original.
-
-::: {#tbl-met-con-esc}
-
-```{r}
-#| column: body-outset
-
-# m_conect_ref_tbl <- m_conect |> 
-#   mutate(esc = paste0("Esc. ", esc)) |>
-#   pivot_wider(
-#     names_from = esc,
-#     values_from = metric,
-#     id_cols = c(tipo, max_d)
-#   ) |>
-#   full_join(
-#     m_conect_lulc, by = join_by(tipo, max_d)
-#   ) |> 
-#   mutate(tipo = m_nombres[tipo]) |>
-#   mutate(
-#     max_d = format(
-#       max_d, big.mark = ".", decimal.mark = ",", scientific = FALSE
-#     )
-#   ) |> 
-#   mutate(max_d = paste0("Distancia Máx: ", max_d))
-# 
-# m_conect_ref_tbl |> 
-#   gt(groupname_col = "max_d", rowname_col = "tipo") |>
-#   fmt_auto(lg_num_pref = "sci") |>
-#   sub_missing() |> 
-#   tab_style(
-#     locations = cells_body(),
-#     style = cell_text(font = "JetBrains Mono")
-#   ) |>
-#   tab_style(
-#     locations = cells_row_groups(),
-#     style = list(
-#       cell_fill(color = alpha("#8E063B", .2)),
-#       cell_text(weight = "bold")
-#     )
-#   ) |> 
-#   tab_style(
-#     style = cell_text(
-#       weight = "bold", decorate = "underline", color = "#8E063B"
-#     ),
-#     locations = purrr::map(
-#       1:nrow(m_conect_ref_tbl),
-#       \(fila) {
-#         cells_body(
-#           columns = which(
-#             m_conect_ref_tbl[fila, 3:12] > m_conect_ref_tbl$metric_lulc[fila]*1.001
-#           )+2,
-#           rows = fila
-#         )
-#       }
-#     )
-#   ) |>
-#   tab_style(
-#     locations = cells_body(columns = "metric_lulc"),
-#     style = cell_fill(color = "grey93")
-#   ) |>
-#   tab_style(
-#     locations = cells_column_labels(columns = "metric_lulc"),
-#     style = cell_fill(color = "grey93")
-#   ) |>
-#   cols_label(
-#     metric_lulc = html("<i>Métrica en<br>escenario original</i>")
-#   ) |> 
-#   tab_spanner(
-#     label = "Escenario",
-#     columns = `Esc. 1`:`Esc. 10`
-#   ) |> 
-#   tab_footnote(
-#     footnote = html(
-#       "<b style='font-family: JetBrains Mono; color: #8E063B'>Texto
-#       destacado</b> indica que, en ese escenario, el nutriente asociado
-#       a la clase es <b><u>mayor</u></b> al porcentaje de superficie
-#       correspondiente."
-#     )
-#   ) |>
-#   tab_source_note(
-#     source_note = md(
-#       glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/m_conect.csv)")
-#     )
-#   ) |>
-#   tab_options(
-#       table.width = 1500,
-#     table.border.top.style = "hidden",
-#     table.background.color = "transparent"
-#   ) |> 
-#   cols_width("metric_lulc" ~ pct(9)) |> 
-#   as_raw_html()
-
-m_conect |> 
-  mutate(esc = paste0("Esc. ", esc)) |> 
-  reframe(
-    m = mean(metric),
-    .by = c(max_d, tipo)
-  ) |> 
-  pivot_wider(
-    names_from = tipo,
-    values_from = m
-  ) |> 
-  gt() |> 
-  sub_missing() |> 
-  fmt_auto(
-    columns = c(max_d, CCP)
-  ) |> 
-  fmt_number(
-    columns = c(LCP, CPL, IIC), decimals = 1,
-    drop_trailing_zeros = TRUE
-  ) |> 
-  fmt_engineering(
-    columns = c(SLC, MSC, ECS, AWF),
-    decimals = 1,
-    exp_style = "E1"
-  ) |> 
-  cols_label(
-    max_d = "Distancia Máx."
-  ) |> 
-  tab_style(
-    locations = cells_body(),
-    style = cell_text(font = "JetBrains Mono")
-  ) |> 
-  tab_source_note(
-    source_note = md(
-      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/m_conect.csv)")
-    )
-  ) |>
-  tab_options(
-    table.border.top.style = "hidden",
-    table.background.color = "transparent",
-    table.width = 1000
-  ) |>
-  as_raw_html()
-```
-
-Métricas de conectividad por escenario y distancia máxima.
-
-:::
 
 # Cambio de conectividad
 
@@ -2772,15 +2796,3 @@ conectividad_4_8 |>
 Tabla comparativa de métricas de conectividad
 
 :::
-
-
-
-
-
-
-
-
-
-
-
-

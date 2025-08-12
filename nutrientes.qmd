@@ -309,6 +309,8 @@ Métricas de conectividad para escenario original.
 
 :::
 
+Las métricas de conectividad por escenario resultaron idénticas, por lo que los escenarios no se muestran en la siguiente tabla.
+
 ::: {#tbl-met-con-esc}
 
 ```{r}

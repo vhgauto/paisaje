@@ -75,7 +75,7 @@ library(terra)
 Las figuras a continuación muestran las cantidades de nutrientes por clase y escenario.
 
 ```{r}
-clases_orden <- c("Grassland", "Forest", "Urban", "Agriculture")
+clases_orden <- c("Grassland", "Forest", "Agriculture", "Urban")
 clases_color <- c("#C1D75B", "#58987D", "#75E081", "#8F66B7")
 
 n_p_basin <- readxl::read_xlsx("datos/n_p_basin.xlsx") |> 
@@ -166,6 +166,8 @@ nutri_files <- list.files(
 nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
 
 area_clase_tbl <- read_csv("datos/area_por_clase.csv", show_col_types = FALSE)
+area_clase_tbl2 <- area_clase_tbl |> 
+  mutate(tipo = factor(tipo, clases_orden))
 
 f_gg_nutriente_por <- function(X) {
   g <- nutri_tbl |> 
@@ -177,14 +179,15 @@ f_gg_nutriente_por <- function(X) {
   mutate(esc = factor(esc)) |> 
   mutate(fraccion = sum/sum(sum), .by = c(esc, prod)) |> 
   filter(prod == X) |> 
+  mutate(tipo = factor(tipo, clases_orden)) |> 
   ggplot(aes(esc, fraccion, fill = tipo)) +
   geom_col(show.legend = FALSE) +
   geom_hline(
-    data = area_clase_tbl, aes(yintercept = area_prop), color = "black",
+    data = area_clase_tbl2, aes(yintercept = area_prop), color = "black",
     linetype = 2, linewidth = .4
   ) +
   geom_label(
-    data = area_clase_tbl, 
+    data = area_clase_tbl2, 
     aes(
       label = paste0(format(area_prop*100, digits = 2), "%"), 
       y = area_prop, x = 10

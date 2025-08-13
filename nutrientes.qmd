@@ -106,7 +106,9 @@ f_gg_nutriente <- function(X) {
   geom_col(color = NA, show.legend = FALSE) +
   facet_wrap(vars(clase), scales = "free", nrow = 1) +
   scale_y_continuous(
-    labels = scales::label_number(decimal.mark = ".", big.mark = ","),
+    labels = scales::label_number(
+      decimal.mark = ".", big.mark = ",", scale = 1e-3
+    ),
     expand = expansion(add = c(0, 0), mult = c(0, .05))
   ) +
   scale_fill_manual(
@@ -114,7 +116,7 @@ f_gg_nutriente <- function(X) {
     values = clases_color
   ) +
   labs(x = "Escenario") +
-  theme_bw(base_size = 7) +
+  theme_classic(base_size = 7) +
   theme(
     aspect.ratio = 1,
     plot.background = element_blank(),
@@ -135,7 +137,7 @@ f_gg_nutriente <- function(X) {
     plot = g,
     filename = paste0("figuras/nutriente_", X, ".png"),
     width = 15,
-    height = 4,
+    height = 4.25,
     units = "cm"
   )
 }
@@ -144,19 +146,88 @@ f_gg_nutriente("N")
 f_gg_nutriente("P")
 ```
 
-Cantidad de nitrógeno.
+Cantidad de nitrógeno, en <u>miles</u>.
 
-::: {.column-page}
+:::: {.callout-note collapse="true" icon="false" title="Mostrar imagen"}
 
 ![Cantidad de nitrógeno por clase y escenario.](figuras/nutriente_N.png){#fig-nutriente-n}
 
-:::
+::::
 
-Cantidad de fósforo.
+Cantidad de fósforo, en <u>miles</u>.
+
+:::: {.callout-note collapse="true" icon="false" title="Mostrar imagen"}
+
+![Cantidad de fósforo por clase y escenario.](figuras/nutriente_P.png){#fig-nutriente-p}
+
+::::
+
+Se combinaron las figuras [-@fig-nutriente-n] y [-@fig-nutriente-p] para generar la siguiente, que muestra las cantidades, en <u>miles</u> de nitrógeno (A) y fósforo (B), por clase y escenario.
+
+```{r}
+f_gg_nutriente <- function(X) {
+  n_p_basin |> 
+    filter(nut == X) |> 
+    ggplot(aes(esc, valor, fill = clase)) +
+    geom_col(color = NA, show.legend = FALSE) +
+    facet_wrap(vars(clase), scales = "free", nrow = 1) +
+    scale_y_continuous(
+      labels = scales::label_number(
+        decimal.mark = ".", big.mark = ",", scale = 1e-3
+      ),
+      expand = expansion(add = c(0, 0), mult = c(0, .05))
+    ) +
+    scale_fill_manual(
+      breaks = clases_orden,
+      values = clases_color
+    ) +
+    labs(x = "Escenario") +
+    theme_classic(base_size = 7) +
+    theme(
+      aspect.ratio = 1,
+      plot.background = element_blank(),
+      axis.ticks = element_line(color = "black"),
+      axis.ticks.x = element_blank(),
+      axis.title.y = element_blank(),
+      axis.text = element_text(color = "black"),
+      axis.text.y = element_text(hjust = 1),
+      panel.background = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.y = element_line(color = "black", linewidth = .1),
+      panel.grid.major.x = element_blank(),
+      strip.background = element_blank(),
+      strip.text = element_text(color = "black")
+    )
+}
+
+fig1 <- f_gg_nutriente("N")
+fig2 <- f_gg_nutriente("P")
+
+fig3 <- (fig1 / fig2) +
+  plot_annotation(
+    tag_levels = "A"
+  ) &
+  theme(
+    plot.background = element_blank(),
+    plot.tag.position = "topright",
+    plot.tag.location = "margin",
+    plot.tag = element_text(
+      size = 12, margin = margin(b = 0, l = -15), face = "bold"
+    )
+  )
+
+ggsave(
+  plot = fig3,
+  filename = "figuras/nutriente_compuesto.png",
+  width = 15,
+  height = 10,
+  units = "cm"
+)
+```
 
 ::: {.column-page}
 
-![Cantidad de fósforo por clase y escenario.](figuras/nutriente_P.png){#fig-nutriente-p}
+![Cantidades, en miles, de nitrógeno (**A**) y fósforo (**B**) por clase y escenario](figuras/nutriente_compuesto.png){#fig-nutriente-compuesto}
 
 :::
 
@@ -340,6 +411,8 @@ ggsave(
 
 :::
 
+Índice $NDRi$ para nitrógeno, en <u>millones</u>.
+
 ```{r}
 #| eval: false
 
@@ -411,19 +484,88 @@ f_gg_ndri("N")
 f_gg_ndri("P")
 ```
 
-Índice $NDRi$ para nitrógeno, en <u>millones</u>.
-
-::: {.column-page}
+:::: {.callout-note collapse="true" icon="false" title="Mostrar imagen"}
 
 ![NDRi por clase y escenario para nitrógeno](figuras/ndri_N.png){#fig-ndri-n}
 
-:::
+::::
 
 Índice $NDRi$ para fósforo, en <u>millones</u>.
 
-::: {.column-page}
+:::: {.callout-note collapse="true" icon="false" title="Mostrar imagen"}
 
 ![NDRi por clase y escenario para fósforo](figuras/ndri_P.png){#fig-ndri-n}
+
+::::
+
+Combinando las figuras [-@fig-ndri-n] y [-@fig-ndri-p] se generó la siguiente, en <u>millones</u>, del $NDRi$ para nitrógeno (**A**) y fósforo (**B**), por clase y escenario.
+
+```{r}
+#| eval: false
+
+f_gg_ndri <- function(X) {
+  ndri_valor |> 
+    filter(nutriente == X) |> 
+    ggplot(aes(esc, ndri, fill = tipo)) +
+    geom_col(show.legend = FALSE) +
+    facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+    scale_y_continuous(
+      labels = scales::label_number(
+        scale = 1e-6, decimal.mark = ".", big.mark = ","
+      ),
+      expand = expansion(add = c(0, 0), mult = c(0, .05))
+    ) +
+    scale_fill_manual(
+      breaks = clases_orden,
+      values = clases_color
+    ) +
+    labs(x = "Escenario") +
+    theme_classic(base_size = 7) +
+    theme(
+      aspect.ratio = 1,
+      plot.background = element_blank(),
+      axis.ticks = element_line(color = "black"),
+      axis.ticks.x = element_blank(),
+      axis.title.y = element_blank(),
+      axis.text = element_text(color = "black"),
+      axis.text.y = element_text(hjust = 1),
+      panel.background = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.y = element_line(color = "black", linewidth = .1),
+      panel.grid.major.x = element_blank(),
+      strip.background = element_blank(),
+      strip.text = element_text(color = "black")
+    )
+}
+
+fig_ndri1 <- f_gg_ndri("N")
+fig_ndri2 <- f_gg_ndri("P")
+
+fig_ndri3 <- (fig_ndri1 / fig_ndri2) +
+  plot_annotation(
+    tag_levels = "A"
+  ) &
+  theme(
+    plot.background = element_blank(),
+    plot.tag.position = "topright",
+    plot.tag.location = "margin",
+    plot.tag = element_text(
+      size = 12, margin = margin(b = 0, l = -15), face = "bold"
+    )
+  )
+
+ggsave(
+  plot = fig_ndri3,
+  filename = "figuras/ndri_compuesto.png",
+  width = 15,
+  height = 10,
+  units = "cm"
+)
+```
+
+::: {.column-page}
+
+![Índice NDRi para nitrógeno y fósforo, por clase y escenario.](figuras/ndri_compuesto.png){#fig-ndri-compuesto}
 
 :::
 
@@ -1347,6 +1489,7 @@ La métricas de clase que mostraron cambios con la dependencia del terreno se ob
 ```{r}
 #| warning: false
 #| message: false
+#| eval: false
 
 g1 <- m_clase |>
   filter(as.numeric(metric) > 12) |> 
@@ -1552,6 +1695,7 @@ Con las métricas del paisaje que varían con la dependencia del terreno se cre�
 #| fig-dpi: 300
 #| warning: false
 #| message: false
+#| eval: false
 
 g2 <- m_paisaje |>
   filter(as.numeric(metric) > 10) |> 
@@ -1631,7 +1775,6 @@ Luego, para verificar los escenarios generados, calculo las métricas y verifico
 ::: {#tbl-met-casoI}
 
 ```{r}
-
 tibble(
   Clase = c("Clase 1", "Clase 2"),
   `Number of patches` = c("[700, 800]", "[800, 1100]"),
@@ -1668,7 +1811,6 @@ Características del paisaje para el Caso I.
 ::: {#tbl-met-casoII}
 
 ```{r}
-
 tibble(
   Clase = c("Clase A", "Clase B"),
   `Number of patches` = c("[700, 800]", "[700, 800]"),
@@ -1902,7 +2044,6 @@ bind_rows(
 ::: {#tbl-met-casoI-verif}
 
 ```{r}
-
 read_tsv("datos/df_custom.tsv", show_col_types = FALSE) |>
   filter(class != -1) |>
   mutate(
@@ -1956,7 +2097,6 @@ Verificación de métricas para el Caso I.
 ::: {#tbl-met-casoII-verif}
 
 ```{r}
-
 read_tsv("datos/df_custom2.tsv", show_col_types = FALSE) |>
   filter(class != -1) |>
   mutate(
@@ -2130,6 +2270,8 @@ walk(
 La lectura de los resultados permitió generar la siguiente figura, que muestra la proporción de nutrientes para cada clase, según el escenario dado.
 
 ```{r}
+#| eval: false
+
 f_gg_nutrientes <- function(nutriente) {
   nutri_tbl |>
     filter(prod == nutriente) |>
@@ -2305,6 +2447,8 @@ write_csv(area_clase_tbl, "datos/area_por_clase.csv")
 Por cada escenario y clase, se compararon las proporciones respecto del área de la clase.
 
 ```{r}
+#| eval: false
+
 area_clase_csv <- list.files(
   path = "datos/",
   pattern = "area-clase-",
@@ -2378,7 +2522,6 @@ ggsave(
   height = 29,
   units = "cm"
 )
-
 ```
 
 ::: {.callout-note appearance="simple" collapse=true icon=false title="Mostrar figura"}

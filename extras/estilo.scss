@@ -54,3 +54,7 @@ div.callout-note.callout {
 details>summary {
     color: lightgrey;
 }
+
+div.callout-note.callout-style-default>.callout-header {
+  background-color: lighten($c1, 65);
+}

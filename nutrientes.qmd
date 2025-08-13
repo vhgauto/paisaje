@@ -209,10 +209,10 @@ fig3 <- (fig1 / fig2) +
   ) &
   theme(
     plot.background = element_blank(),
-    plot.tag.position = "topright",
+    plot.tag.position = "topleft",
     plot.tag.location = "margin",
     plot.tag = element_text(
-      size = 12, margin = margin(b = 0, l = -15), face = "bold"
+      size = 12, margin = margin(b = 0, r = -15), face = "bold"
     )
   )
 
@@ -494,7 +494,7 @@ f_gg_ndri("P")
 
 :::: {.callout-note collapse="true" icon="false" title="Mostrar imagen"}
 
-![NDRi por clase y escenario para fósforo](figuras/ndri_P.png){#fig-ndri-n}
+![NDRi por clase y escenario para fósforo](figuras/ndri_P.png){#fig-ndri-p}
 
 ::::
 
@@ -547,10 +547,10 @@ fig_ndri3 <- (fig_ndri1 / fig_ndri2) +
   ) &
   theme(
     plot.background = element_blank(),
-    plot.tag.position = "topright",
+    plot.tag.position = "topleft",
     plot.tag.location = "margin",
     plot.tag = element_text(
-      size = 12, margin = margin(b = 0, l = -15), face = "bold"
+      size = 12, margin = margin(b = 0, r = -15), face = "bold"
     )
   )
 

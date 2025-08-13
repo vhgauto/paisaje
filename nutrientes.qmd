@@ -6,6 +6,7 @@ format:
     embed-resources: true
     anchor-sections: true
     smooth-scroll: true
+    crossrefs-hover: false
     toc: true
     lang: es
     include-in-header:
@@ -161,8 +162,8 @@ Cantidad de fósforo.
 
 ```{r}
 nutri_files <- list.files(
-  path = "datos/", pattern = "nutriente", full.names = TRUE
-)[2:5]
+  path = "datos/", pattern = "^nutriente", full.names = TRUE
+)[1:4]
 nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
 
 area_clase_tbl <- read_csv("datos/area_por_clase.csv", show_col_types = FALSE)
@@ -183,7 +184,8 @@ f_gg_nutriente_por <- function(X) {
   ggplot(aes(esc, fraccion, fill = tipo)) +
   geom_col(show.legend = FALSE) +
   geom_hline(
-    data = area_clase_tbl2, aes(yintercept = area_prop), color = "black",
+    data = area_clase_tbl2, aes(yintercept = area_prop), 
+    color = "black",
     linetype = 2, linewidth = .4
   ) +
   geom_label(
@@ -206,7 +208,7 @@ f_gg_nutriente_por <- function(X) {
   ) +
   coord_cartesian(clip = "off") +
   labs(x = "Escenario") +
-  theme_bw(base_size = 7) +
+  theme_classic(base_size = 7) +
   theme(
     aspect.ratio = 1,
     plot.background = element_blank(),
@@ -241,17 +243,341 @@ f_gg_nutriente_por("p_surface_export")
 
 Porcentaje de nitrógeno aportado por clase, por escenario, comparado con la proporción del área de la clase.
 
-::: {.column-page}
+:::: {.callout-note collapse="true" icon="false" title="Mostrar imagen"}
 
 ![Procentaje de nitrógeno por clase y escenario.](figuras/n_total_export_por.png){#fig-nutriente-n-por}
 
-:::
+::::
 
 Porcentaje de fósforo aportado por clase, por escenario, comparado con la proporción del área de la clase.
 
-::: {.column-page}
+:::: {.callout-note collapse="true" icon="false" title="Mostrar imagen"}
 
 ![Procentaje de fósforo por clase y escenario.](figuras/p_surface_export_por.png){#fig-nutriente-p-por}
+
+::::
+
+La siguiente figura combina las figuras individuales para nitrógeno (@fig-nutriente-n-por) y fósforo (@fig-nutriente-p-por).
+
+```{r}
+g_nutriente_porc <- nutri_tbl |> 
+  mutate(tipo = fct_reorder(tipo, sum)) |> 
+  mutate(
+    porcentaje = sum/sum(sum), .by = c(esc, prod)
+  ) |> 
+  arrange(tipo) |> 
+  mutate(esc = factor(esc)) |> 
+  mutate(fraccion = sum/sum(sum), .by = c(esc, prod)) |> 
+  filter(prod %in% c("n_total_export", "p_surface_export")) |> 
+  mutate(tipo = factor(tipo, clases_orden)) |> 
+  ggplot(aes(esc, fraccion, fill = prod)) +
+  geom_col(position = position_dodge()) +
+  geom_hline(
+    data = area_clase_tbl2, aes(yintercept = area_prop), 
+    color = "black",
+    linetype = 2, linewidth = .4
+  ) +
+  geom_label(
+    data = area_clase_tbl2, 
+    aes(
+      label = paste0(format(area_prop*100, digits = 2), "%"), 
+      y = area_prop, x = 10
+    ),
+    vjust = -.1, hjust = .5, size = 2, fill = alpha("white", .5),
+    label.size = unit(0, "mm"), inherit.aes = FALSE
+  ) +
+  facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+  scale_y_continuous(
+    labels = scales::label_percent(),
+    expand = expansion(mult = c(0, .1), add = c(0, 0))
+  ) +
+  scale_fill_manual(
+    breaks = c("n_total_export", "p_surface_export"),
+    labels = c("N", "P"),
+    values = c("#4FB6CA", "#E3C28B")
+  ) +
+  coord_cartesian(clip = "off") +
+  labs(x = "Escenario", fill = NULL) +
+  theme_classic(base_size = 7) +
+  theme(
+    aspect.ratio = 1,
+    plot.background = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text = element_text(color = "black"),
+    axis.text.x = element_text(margin = margin(t = 1)),
+    axis.text.y = element_text(hjust = 1),
+    panel.spacing.x = unit(8, "pt"),
+    panel.ontop = FALSE,
+    panel.background = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_line(color = "black", linewidth = .1),
+    panel.grid.major.x = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(color = "black"),
+    legend.position = "top",
+    legend.background = element_blank(),
+    legend.key.size = unit(.3, "cm"),
+    legend.box.spacing = unit(0, "mm"),
+    legend.text = element_text(
+      margin = margin(r = 10, l = 2), size = rel(.8)
+    )
+  )
+
+ggsave(
+  plot = g_nutriente_porc,
+  filename = "figuras/nutriente_compuesto_porcentaje.png",
+  width = 15,
+  height = 4.7,
+  units = "cm"
+)
+```
+
+::: {.column-page}
+
+![Porcentajes de nutrientes N y P, por clase y escenario, comparado con la cobertura de cada clase](figuras/nutriente_compuesto_porcentaje.png){#fig-nutriente-comp}
+
+:::
+
+```{r}
+#| eval: false
+
+ndri_valor <- readxl::read_xlsx("datos/ndri_nutri.xlsx") |> 
+  janitor::clean_names() |> 
+  select(nutriente, esc, forest, grassland, agriculture, urban) |> 
+  mutate(esc = str_remove(esc, "SCENARIO ")) |> 
+  mutate(esc = as.numeric(esc)) |> 
+  pivot_longer(
+    cols = -c(esc, nutriente),
+    values_to = "ndri",
+    names_to = "tipo"
+  ) |> 
+  mutate(tipo = str_to_sentence(tipo)) |> 
+  mutate(tipo = factor(tipo, clases_orden)) |> 
+  mutate(esc = factor(esc)) |> 
+  mutate(
+    suma = sum(ndri), 
+    .by = c(nutriente, esc)
+  ) |> 
+  mutate(
+    prop = ndri/suma
+  )
+
+f_gg_ndri <- function(X) {
+  g <- ndri_valor |> 
+  filter(nutriente == X) |> 
+  ggplot(aes(esc, ndri, fill = tipo)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+  scale_y_continuous(
+    labels = scales::label_number(
+      scale = 1e-6, decimal.mark = ".", big.mark = ","
+    ),
+    expand = expansion(add = c(0, 0), mult = c(0, .05))
+  ) +
+  scale_fill_manual(
+    breaks = clases_orden,
+    values = clases_color
+  ) +
+  labs(x = "Escenario") +
+  theme_classic(base_size = 7) +
+  theme(
+    aspect.ratio = 1,
+    plot.background = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text = element_text(color = "black"),
+    axis.text.y = element_text(hjust = 1),
+    panel.background = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_line(color = "black", linewidth = .1),
+    panel.grid.major.x = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(color = "black")
+  )
+  
+  ggsave(
+    plot = g,
+    filename = paste0("figuras/ndri_", X, ".png"),
+    width = 15,
+    height = 4.25,
+    units = "cm"
+  )
+}
+
+f_gg_ndri("N")
+f_gg_ndri("P")
+```
+
+Índice $NDRi$ para nitrógeno, en <u>millones</u>.
+
+::: {.column-page}
+
+![NDRi por clase y escenario para nitrógeno](figuras/ndri_N.png){#fig-ndri-n}
+
+:::
+
+Índice $NDRi$ para fósforo, en <u>millones</u>.
+
+::: {.column-page}
+
+![NDRi por clase y escenario para fósforo](figuras/ndri_P.png){#fig-ndri-n}
+
+:::
+
+```{r}
+#| eval: false
+
+f_gg_ndri_porcentaje <- function(X) {
+  g <- ndri_valor |> 
+  filter(nutriente == X) |> 
+  ggplot(aes(esc, prop, fill = tipo)) +
+  geom_col(show.legend = FALSE) +
+  geom_hline(
+    data = area_clase_tbl2, aes(yintercept = area_prop), 
+    color = "black",
+    linetype = 2, linewidth = .4
+  ) +
+  geom_label(
+    data = area_clase_tbl2, 
+    aes(
+      label = paste0(format(area_prop*100, digits = 2), "%"), 
+      y = area_prop, x = 10
+    ),
+    vjust = -.1, hjust = .5, size = 2, fill = alpha("white", .5),
+    label.size = unit(0, "mm"), inherit.aes = FALSE
+  ) +
+  facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+  scale_y_continuous(
+    labels = scales::label_percent(),
+    expand = expansion(add = c(0, 0), mult = c(0, .05))
+  ) +
+  scale_fill_manual(
+    breaks = clases_orden,
+    values = clases_color
+  ) +
+  coord_cartesian(clip = "off") +
+  labs(x = "Escenario") +
+  theme_classic(base_size = 7) +
+  theme(
+    aspect.ratio = 1,
+    plot.background = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text = element_text(color = "black"),
+    axis.text.y = element_text(hjust = 1),
+    panel.background = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_line(color = "black", linewidth = .1),
+    panel.grid.major.x = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(color = "black")
+  )
+  
+  ggsave(
+    plot = g,
+    filename = paste0("figuras/ndri_", X, "_porcentaje.png"),
+    width = 15,
+    height = 4.25,
+    units = "cm"
+  )
+}
+
+f_gg_ndri_porcentaje("N")
+f_gg_ndri_porcentaje("P")
+```
+
+Porcentaje del indice $NDRi$ para nitrógeno, asociado a cada clase, comparado con la cobertura de la misma (línea horizontal).
+
+:::: {.callout-note collapse="true" icon="false" title="Mostrar imagen"}
+
+![Porcenataje de NDRi asociado a cada clase y escenario para nitrógeno](figuras/ndri_N_porcentaje.png){#fig-ndri-n-por}
+
+::::
+
+Porcentaje del indice $NDRi$ para fósforo, asociado a cada clase, comparado con la cobertura de la misma (línea horizontal).
+
+:::: {.callout-note collapse="true" icon="false" title="Mostrar imagen"}
+
+![Porcenataje de NDRi asociado a cada clase y escenario para fósforo](figuras/ndri_P_porcentaje.png){#fig-ndri-p-por}
+
+::::
+
+La siguiente figura combina los porcentajes de $NDRi$ para nitrógeno (@fig-ndri-n-por) y fósforo (@fig-ndri-p-por), por clase y escenario, comparado con la cobertura de la clase (línea de trazos horizontal).
+
+```{r}
+#| eval: false
+
+g_ndri <- ndri_valor |> 
+  ggplot(aes(esc, prop, fill = nutriente)) +
+  geom_col(position = position_dodge(), show.legend = TRUE) +
+  geom_hline(
+    data = area_clase_tbl2, aes(yintercept = area_prop), 
+    color = "black",
+    linetype = 2, linewidth = .4
+  ) +
+  geom_label(
+    data = area_clase_tbl2, 
+    aes(
+      label = paste0(format(area_prop*100, digits = 2), "%"), 
+      y = area_prop, x = Inf
+    ),
+    vjust = -.1, hjust = 1, size = 2, fill = alpha("white", .8),
+    label.size = unit(0, "mm"), label.padding = unit(0, "mm"),
+    label.r = unit(0, "mm"), inherit.aes = FALSE
+  ) +
+  facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+  scale_y_continuous(
+    labels = scales::label_percent(),
+    expand = expansion(add = c(0, 0), mult = c(0, .05))
+  ) +
+  scale_fill_manual(
+    breaks = c("N", "P"),
+    values = c("#4FB6CA", "#E3C28B")
+  ) +
+  coord_cartesian(clip = "off") +
+  labs(x = "Escenario", fill = NULL) +
+  theme_classic(base_size = 7) +
+  theme(
+    aspect.ratio = 1,
+    plot.background = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text = element_text(color = "black"),
+    axis.text.y = element_text(hjust = 1),
+    panel.background = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_line(color = "black", linewidth = .1),
+    panel.grid.major.x = element_blank(),
+    panel.spacing.x = unit(12, "pt"),
+    strip.background = element_blank(),
+    strip.text = element_text(color = "black"),
+    legend.position = "top",
+    legend.background = element_blank(),
+    legend.key.size = unit(.3, "cm"),
+    legend.box.spacing = unit(0, "mm"),
+    legend.text = element_text(
+      margin = margin(r = 10, l = 2), size = rel(.8)
+    )
+  )
+
+ggsave(
+  plot = g,
+  filename = "figuras/ndri_compuesto_porcentaje.png",
+  width = 15,
+  height = 4.7,
+  units = "cm"
+)
+```
+
+
+::: {.column-page}
+
+![Porcenataje de NDRi asociado a cada clase y escenario para nutrientes N y P](figuras/ndri_compuesto_porcentaje.png){#fig-ndri-comp}
 
 :::
 
@@ -465,7 +791,7 @@ d <- read_delim(
   mutate(value = as.integer(value)) |>
   filter(value != 0) |>
   mutate(col = c(
-    "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#A65628", "#F781BF"
+    "#58987D", "#377EB8", "#C1D75B", "#75E081", "#8F66B7", "#A65628", "#F781BF"
   ))
 
 col_df <- d |>
@@ -572,14 +898,14 @@ d_r <- d |>
   add_row(
     value = as.integer(-1),
     tipo = "Grassland",
-    col = "#96D458"
+    col = "#C1D75B"
   ) |> 
   mutate(
     col = case_match(
       tipo,
-      "Forest" ~ "#69A7A7",
-      "Agriculture" ~ "#C199E9",
-      "Urban" ~ "#E65757",
+      "Forest" ~ "#58987D",
+      "Agriculture" ~ "#75E081",
+      "Urban" ~ "#8F66B7",
       .default = col
     )
   )
@@ -2769,7 +3095,9 @@ La tabla muestra los valores de métricas de <u>conectividad</u>, considerando u
 ::: {#tbl-4-8-conectividad}
 
 ```{r}
-conectividad_4_8 <- read_csv("datos/conectividad_4_8.csv", show_col_types = FALSE)
+conectividad_4_8 <- read_csv(
+  "datos/conectividad_4_8.csv", show_col_types = FALSE
+)
 
 conectividad_4_8 |> 
   gt(rowname_col = "tipo", groupname_col = "max_d") |> 

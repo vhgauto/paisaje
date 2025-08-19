@@ -79,60 +79,62 @@ Las figuras a continuación muestran las cantidades de nutrientes por clase y es
 clases_orden <- c("Grassland", "Forest", "Agriculture", "Urban")
 clases_color <- c("#C1D75B", "#58987D", "#75E081", "#8F66B7")
 
-n_p_basin <- readxl::read_xlsx("datos/n_p_basin.xlsx") |> 
-  janitor::clean_names() |> 
+n_p_basin <- readxl::read_xlsx("datos/n_p_basin.xlsx") |>
+  janitor::clean_names() |>
   mutate(
     nut = if_else(str_detect(x1, "N_total"), "N", "P"),
     esc = case_when(
       nut == "N" ~ str_remove(x1, "N_totalS"),
       nut == "P" ~ str_remove(x1, "P_SUR_S")
     )
-  ) |> 
-  select(nut, esc, forest, grassland, agriculture, urban) |> 
-  mutate(esc = as.numeric(esc)) |> 
+  ) |>
+  select(nut, esc, forest, grassland, agriculture, urban) |>
+  mutate(esc = as.numeric(esc)) |>
   pivot_longer(
     cols = -c(nut, esc),
     values_to = "valor",
     names_to = "clase"
-  ) |> 
-  mutate(clase = str_to_sentence(clase)) |> 
-  mutate(clase = factor(clase, clases_orden)) |> 
+  ) |>
+  mutate(clase = str_to_sentence(clase)) |>
+  mutate(clase = factor(clase, clases_orden)) |>
   mutate(esc = factor(esc))
 
 f_gg_nutriente <- function(X) {
-  g <- n_p_basin |> 
-  filter(nut == X) |> 
-  ggplot(aes(esc, valor, fill = clase)) +
-  geom_col(color = NA, show.legend = FALSE) +
-  facet_wrap(vars(clase), scales = "free", nrow = 1) +
-  scale_y_continuous(
-    labels = scales::label_number(
-      decimal.mark = ".", big.mark = ",", scale = 1e-3
-    ),
-    expand = expansion(add = c(0, 0), mult = c(0, .05))
-  ) +
-  scale_fill_manual(
-    breaks = clases_orden,
-    values = clases_color
-  ) +
-  labs(x = "Escenario") +
-  theme_classic(base_size = 7) +
-  theme(
-    aspect.ratio = 1,
-    plot.background = element_blank(),
-    axis.ticks = element_line(color = "black"),
-    axis.ticks.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.text = element_text(color = "black"),
-    axis.text.y = element_text(hjust = 1),
-    panel.background = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.grid.major.y = element_line(color = "black", linewidth = .1),
-    panel.grid.major.x = element_blank(),
-    strip.background = element_blank(),
-    strip.text = element_text(color = "black")
-  )
-  
+  g <- n_p_basin |>
+    filter(nut == X) |>
+    ggplot(aes(esc, valor, fill = clase)) +
+    geom_col(color = NA, show.legend = FALSE) +
+    facet_wrap(vars(clase), scales = "free", nrow = 1) +
+    scale_y_continuous(
+      labels = scales::label_number(
+        decimal.mark = ".",
+        big.mark = ",",
+        scale = 1e-3
+      ),
+      expand = expansion(add = c(0, 0), mult = c(0, .05))
+    ) +
+    scale_fill_manual(
+      breaks = clases_orden,
+      values = clases_color
+    ) +
+    labs(x = "Escenario") +
+    theme_classic(base_size = 7) +
+    theme(
+      aspect.ratio = 1,
+      plot.background = element_blank(),
+      axis.ticks = element_line(color = "black"),
+      axis.ticks.x = element_blank(),
+      axis.title.y = element_blank(),
+      axis.text = element_text(color = "black"),
+      axis.text.y = element_text(hjust = 1),
+      panel.background = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.y = element_line(color = "black", linewidth = .1),
+      panel.grid.major.x = element_blank(),
+      strip.background = element_blank(),
+      strip.text = element_text(color = "black")
+    )
+
   ggsave(
     plot = g,
     filename = paste0("figuras/nutriente_", X, ".png"),
@@ -166,14 +168,16 @@ Se combinaron las figuras [-@fig-nutriente-n] y [-@fig-nutriente-p] para generar
 
 ```{r}
 f_gg_nutriente <- function(X) {
-  n_p_basin |> 
-    filter(nut == X) |> 
+  n_p_basin |>
+    filter(nut == X) |>
     ggplot(aes(esc, valor, fill = clase)) +
     geom_col(color = NA, show.legend = FALSE) +
     facet_wrap(vars(clase), scales = "free", nrow = 1) +
     scale_y_continuous(
       labels = scales::label_number(
-        decimal.mark = ".", big.mark = ",", scale = 1e-3
+        decimal.mark = ".",
+        big.mark = ",",
+        scale = 1e-3
       ),
       expand = expansion(add = c(0, 0), mult = c(0, .05))
     ) +
@@ -212,7 +216,9 @@ fig3 <- (fig1 / fig2) +
     plot.tag.position = "topleft",
     plot.tag.location = "margin",
     plot.tag = element_text(
-      size = 12, margin = margin(b = 0, r = -15), face = "bold"
+      size = 12,
+      margin = margin(b = 0, r = -15),
+      face = "bold"
     )
   )
 
@@ -225,80 +231,100 @@ ggsave(
 )
 ```
 
-::: {.column-page}
+:::: {.column-page}
+
+::: {.panel-tabset}
+
+## Ejes verticales individuales
 
 ![Cantidades, en miles, de nitrógeno (**A**) y fósforo (**B**) por clase y escenario](figuras/nutriente_compuesto.png){#fig-nutriente-compuesto}
 
+## Eje vertical compartido
+
+![Cantidades, en miles, de nitrógeno (**A**) y fósforo (**B**) por clase y escenario](figuras/nutriente_compuesto2.png)
+
 :::
+
+::::
 
 ```{r}
 nutri_files <- list.files(
-  path = "datos/", pattern = "^nutriente", full.names = TRUE
+  path = "datos/",
+  pattern = "^nutriente",
+  full.names = TRUE
 )[1:4]
 nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
 
 area_clase_tbl <- read_csv("datos/area_por_clase.csv", show_col_types = FALSE)
-area_clase_tbl2 <- area_clase_tbl |> 
+area_clase_tbl2 <- area_clase_tbl |>
   mutate(tipo = factor(tipo, clases_orden))
 
 f_gg_nutriente_por <- function(X) {
-  g <- nutri_tbl |> 
-  mutate(tipo = fct_reorder(tipo, sum)) |> 
-  mutate(
-    porcentaje = sum/sum(sum), .by = c(esc, prod)
-  ) |> 
-  arrange(tipo) |> 
-  mutate(esc = factor(esc)) |> 
-  mutate(fraccion = sum/sum(sum), .by = c(esc, prod)) |> 
-  filter(prod == X) |> 
-  mutate(tipo = factor(tipo, clases_orden)) |> 
-  ggplot(aes(esc, fraccion, fill = tipo)) +
-  geom_col(show.legend = FALSE) +
-  geom_hline(
-    data = area_clase_tbl2, aes(yintercept = area_prop), 
-    color = "black",
-    linetype = 2, linewidth = .4
-  ) +
-  geom_label(
-    data = area_clase_tbl2, 
-    aes(
-      label = paste0(format(area_prop*100, digits = 2), "%"), 
-      y = area_prop, x = 10
-    ),
-    vjust = -.1, hjust = .5, size = 2, fill = alpha("white", .5),
-    label.size = unit(0, "mm"), inherit.aes = FALSE
-  ) +
-  facet_wrap(vars(tipo), nrow = 1, scales = "free") +
-  scale_y_continuous(
-    labels = scales::label_percent(),
-    expand = expansion(mult = c(0, .1), add = c(0, 0))
-  ) +
-  scale_fill_manual(
-    breaks = clases_orden,
-    values = clases_color
-  ) +
-  coord_cartesian(clip = "off") +
-  labs(x = "Escenario") +
-  theme_classic(base_size = 7) +
-  theme(
-    aspect.ratio = 1,
-    plot.background = element_blank(),
-    axis.ticks = element_line(color = "black"),
-    axis.ticks.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.text = element_text(color = "black"),
-    axis.text.x = element_text(margin = margin(t = 1)),
-    axis.text.y = element_text(hjust = 1),
-    panel.spacing.x = unit(8, "pt"),
-    panel.ontop = FALSE,
-    panel.background = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.grid.major.y = element_line(color = "black", linewidth = .1),
-    panel.grid.major.x = element_blank(),
-    strip.background = element_blank(),
-    strip.text = element_text(color = "black")
-  )
-  
+  g <- nutri_tbl |>
+    mutate(tipo = fct_reorder(tipo, sum)) |>
+    mutate(
+      porcentaje = sum / sum(sum),
+      .by = c(esc, prod)
+    ) |>
+    arrange(tipo) |>
+    mutate(esc = factor(esc)) |>
+    mutate(fraccion = sum / sum(sum), .by = c(esc, prod)) |>
+    filter(prod == X) |>
+    mutate(tipo = factor(tipo, clases_orden)) |>
+    ggplot(aes(esc, fraccion, fill = tipo)) +
+    geom_col(show.legend = FALSE) +
+    geom_hline(
+      data = area_clase_tbl2,
+      aes(yintercept = area_prop),
+      color = "black",
+      linetype = 2,
+      linewidth = .4
+    ) +
+    geom_label(
+      data = area_clase_tbl2,
+      aes(
+        label = paste0(format(area_prop * 100, digits = 2), "%"),
+        y = area_prop,
+        x = 10
+      ),
+      vjust = -.1,
+      hjust = .5,
+      size = 2,
+      fill = alpha("white", .5),
+      label.size = unit(0, "mm"),
+      inherit.aes = FALSE
+    ) +
+    facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+    scale_y_continuous(
+      labels = scales::label_percent(),
+      expand = expansion(mult = c(0, .1), add = c(0, 0))
+    ) +
+    scale_fill_manual(
+      breaks = clases_orden,
+      values = clases_color
+    ) +
+    coord_cartesian(clip = "off") +
+    labs(x = "Escenario") +
+    theme_classic(base_size = 7) +
+    theme(
+      aspect.ratio = 1,
+      plot.background = element_blank(),
+      axis.ticks = element_line(color = "black"),
+      axis.ticks.x = element_blank(),
+      axis.title.y = element_blank(),
+      axis.text = element_text(color = "black"),
+      axis.text.x = element_text(margin = margin(t = 1)),
+      axis.text.y = element_text(hjust = 1),
+      panel.spacing.x = unit(8, "pt"),
+      panel.ontop = FALSE,
+      panel.background = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.y = element_line(color = "black", linewidth = .1),
+      panel.grid.major.x = element_blank(),
+      strip.background = element_blank(),
+      strip.text = element_text(color = "black")
+    )
+
   ggsave(
     plot = g,
     filename = paste0("figuras/", X, "_por.png"),
@@ -331,31 +357,39 @@ Porcentaje de fósforo aportado por clase, por escenario, comparado con la propo
 La siguiente figura combina las figuras individuales para nitrógeno (@fig-nutriente-n-por) y fósforo (@fig-nutriente-p-por).
 
 ```{r}
-g_nutriente_porc <- nutri_tbl |> 
-  mutate(tipo = fct_reorder(tipo, sum)) |> 
+g_nutriente_porc <- nutri_tbl |>
+  mutate(tipo = fct_reorder(tipo, sum)) |>
   mutate(
-    porcentaje = sum/sum(sum), .by = c(esc, prod)
-  ) |> 
-  arrange(tipo) |> 
-  mutate(esc = factor(esc)) |> 
-  mutate(fraccion = sum/sum(sum), .by = c(esc, prod)) |> 
-  filter(prod %in% c("n_total_export", "p_surface_export")) |> 
-  mutate(tipo = factor(tipo, clases_orden)) |> 
+    porcentaje = sum / sum(sum),
+    .by = c(esc, prod)
+  ) |>
+  arrange(tipo) |>
+  mutate(esc = factor(esc)) |>
+  mutate(fraccion = sum / sum(sum), .by = c(esc, prod)) |>
+  filter(prod %in% c("n_total_export", "p_surface_export")) |>
+  mutate(tipo = factor(tipo, clases_orden)) |>
   ggplot(aes(esc, fraccion, fill = prod)) +
   geom_col(position = position_dodge()) +
   geom_hline(
-    data = area_clase_tbl2, aes(yintercept = area_prop), 
+    data = area_clase_tbl2,
+    aes(yintercept = area_prop),
     color = "black",
-    linetype = 2, linewidth = .4
+    linetype = 2,
+    linewidth = .4
   ) +
   geom_label(
-    data = area_clase_tbl2, 
+    data = area_clase_tbl2,
     aes(
-      label = paste0(format(area_prop*100, digits = 2), "%"), 
-      y = area_prop, x = 10
+      label = paste0(format(area_prop * 100, digits = 2), "%"),
+      y = area_prop,
+      x = 10
     ),
-    vjust = -.1, hjust = .5, size = 2, fill = alpha("white", .5),
-    label.size = unit(0, "mm"), inherit.aes = FALSE
+    vjust = -.1,
+    hjust = .5,
+    size = 2,
+    fill = alpha("white", .5),
+    label.size = unit(0, "mm"),
+    inherit.aes = FALSE
   ) +
   facet_wrap(vars(tipo), nrow = 1, scales = "free") +
   scale_y_continuous(
@@ -392,7 +426,8 @@ g_nutriente_porc <- nutri_tbl |>
     legend.key.size = unit(.3, "cm"),
     legend.box.spacing = unit(0, "mm"),
     legend.text = element_text(
-      margin = margin(r = 10, l = 2), size = rel(.8)
+      margin = margin(r = 10, l = 2),
+      size = rel(.8)
     )
   )
 
@@ -416,61 +451,63 @@ ggsave(
 ```{r}
 #| eval: false
 
-ndri_valor <- readxl::read_xlsx("datos/ndri_nutri.xlsx") |> 
-  janitor::clean_names() |> 
-  select(nutriente, esc, forest, grassland, agriculture, urban) |> 
-  mutate(esc = str_remove(esc, "SCENARIO ")) |> 
-  mutate(esc = as.numeric(esc)) |> 
+ndri_valor <- readxl::read_xlsx("datos/ndri_nutri.xlsx") |>
+  janitor::clean_names() |>
+  select(nutriente, esc, forest, grassland, agriculture, urban) |>
+  mutate(esc = str_remove(esc, "SCENARIO ")) |>
+  mutate(esc = as.numeric(esc)) |>
   pivot_longer(
     cols = -c(esc, nutriente),
     values_to = "ndri",
     names_to = "tipo"
-  ) |> 
-  mutate(tipo = str_to_sentence(tipo)) |> 
-  mutate(tipo = factor(tipo, clases_orden)) |> 
-  mutate(esc = factor(esc)) |> 
+  ) |>
+  mutate(tipo = str_to_sentence(tipo)) |>
+  mutate(tipo = factor(tipo, clases_orden)) |>
+  mutate(esc = factor(esc)) |>
   mutate(
-    suma = sum(ndri), 
+    suma = sum(ndri),
     .by = c(nutriente, esc)
-  ) |> 
+  ) |>
   mutate(
-    prop = ndri/suma
+    prop = ndri / suma
   )
 
 f_gg_ndri <- function(X) {
-  g <- ndri_valor |> 
-  filter(nutriente == X) |> 
-  ggplot(aes(esc, ndri, fill = tipo)) +
-  geom_col(show.legend = FALSE) +
-  facet_wrap(vars(tipo), nrow = 1, scales = "free") +
-  scale_y_continuous(
-    labels = scales::label_number(
-      scale = 1e-6, decimal.mark = ".", big.mark = ","
-    ),
-    expand = expansion(add = c(0, 0), mult = c(0, .05))
-  ) +
-  scale_fill_manual(
-    breaks = clases_orden,
-    values = clases_color
-  ) +
-  labs(x = "Escenario") +
-  theme_classic(base_size = 7) +
-  theme(
-    aspect.ratio = 1,
-    plot.background = element_blank(),
-    axis.ticks = element_line(color = "black"),
-    axis.ticks.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.text = element_text(color = "black"),
-    axis.text.y = element_text(hjust = 1),
-    panel.background = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.grid.major.y = element_line(color = "black", linewidth = .1),
-    panel.grid.major.x = element_blank(),
-    strip.background = element_blank(),
-    strip.text = element_text(color = "black")
-  )
-  
+  g <- ndri_valor |>
+    filter(nutriente == X) |>
+    ggplot(aes(esc, ndri, fill = tipo)) +
+    geom_col(show.legend = FALSE) +
+    facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+    scale_y_continuous(
+      labels = scales::label_number(
+        scale = 1e-6,
+        decimal.mark = ".",
+        big.mark = ","
+      ),
+      expand = expansion(add = c(0, 0), mult = c(0, .05))
+    ) +
+    scale_fill_manual(
+      breaks = clases_orden,
+      values = clases_color
+    ) +
+    labs(x = "Escenario") +
+    theme_classic(base_size = 7) +
+    theme(
+      aspect.ratio = 1,
+      plot.background = element_blank(),
+      axis.ticks = element_line(color = "black"),
+      axis.ticks.x = element_blank(),
+      axis.title.y = element_blank(),
+      axis.text = element_text(color = "black"),
+      axis.text.y = element_text(hjust = 1),
+      panel.background = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.y = element_line(color = "black", linewidth = .1),
+      panel.grid.major.x = element_blank(),
+      strip.background = element_blank(),
+      strip.text = element_text(color = "black")
+    )
+
   ggsave(
     plot = g,
     filename = paste0("figuras/ndri_", X, ".png"),
@@ -504,14 +541,16 @@ Combinando las figuras [-@fig-ndri-n] y [-@fig-ndri-p] se generó la siguiente, 
 #| eval: false
 
 f_gg_ndri <- function(X) {
-  ndri_valor |> 
-    filter(nutriente == X) |> 
+  ndri_valor |>
+    filter(nutriente == X) |>
     ggplot(aes(esc, ndri, fill = tipo)) +
     geom_col(show.legend = FALSE) +
     facet_wrap(vars(tipo), nrow = 1, scales = "free") +
     scale_y_continuous(
       labels = scales::label_number(
-        scale = 1e-6, decimal.mark = ".", big.mark = ","
+        scale = 1e-6,
+        decimal.mark = ".",
+        big.mark = ","
       ),
       expand = expansion(add = c(0, 0), mult = c(0, .05))
     ) +
@@ -550,7 +589,9 @@ fig_ndri3 <- (fig_ndri1 / fig_ndri2) +
     plot.tag.position = "topleft",
     plot.tag.location = "margin",
     plot.tag = element_text(
-      size = 12, margin = margin(b = 0, r = -15), face = "bold"
+      size = 12,
+      margin = margin(b = 0, r = -15),
+      face = "bold"
     )
   )
 
@@ -563,62 +604,79 @@ ggsave(
 )
 ```
 
-::: {.column-page}
+:::: {.column-page}
+
+::: {.panel-tabset}
+
+## Ejes verticales individuales
 
 ![Índice NDRi para nitrógeno y fósforo, por clase y escenario.](figuras/ndri_compuesto.png){#fig-ndri-compuesto}
 
+## Eje vertical compartido
+
+![Índice NDRi para nitrógeno y fósforo, por clase y escenario.](figuras/ndri_compuesto2.png)
+
 :::
+
+::::
 
 ```{r}
 #| eval: false
 
 f_gg_ndri_porcentaje <- function(X) {
-  g <- ndri_valor |> 
-  filter(nutriente == X) |> 
-  ggplot(aes(esc, prop, fill = tipo)) +
-  geom_col(show.legend = FALSE) +
-  geom_hline(
-    data = area_clase_tbl2, aes(yintercept = area_prop), 
-    color = "black",
-    linetype = 2, linewidth = .4
-  ) +
-  geom_label(
-    data = area_clase_tbl2, 
-    aes(
-      label = paste0(format(area_prop*100, digits = 2), "%"), 
-      y = area_prop, x = 10
-    ),
-    vjust = -.1, hjust = .5, size = 2, fill = alpha("white", .5),
-    label.size = unit(0, "mm"), inherit.aes = FALSE
-  ) +
-  facet_wrap(vars(tipo), nrow = 1, scales = "free") +
-  scale_y_continuous(
-    labels = scales::label_percent(),
-    expand = expansion(add = c(0, 0), mult = c(0, .05))
-  ) +
-  scale_fill_manual(
-    breaks = clases_orden,
-    values = clases_color
-  ) +
-  coord_cartesian(clip = "off") +
-  labs(x = "Escenario") +
-  theme_classic(base_size = 7) +
-  theme(
-    aspect.ratio = 1,
-    plot.background = element_blank(),
-    axis.ticks = element_line(color = "black"),
-    axis.ticks.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.text = element_text(color = "black"),
-    axis.text.y = element_text(hjust = 1),
-    panel.background = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.grid.major.y = element_line(color = "black", linewidth = .1),
-    panel.grid.major.x = element_blank(),
-    strip.background = element_blank(),
-    strip.text = element_text(color = "black")
-  )
-  
+  g <- ndri_valor |>
+    filter(nutriente == X) |>
+    ggplot(aes(esc, prop, fill = tipo)) +
+    geom_col(show.legend = FALSE) +
+    geom_hline(
+      data = area_clase_tbl2,
+      aes(yintercept = area_prop),
+      color = "black",
+      linetype = 2,
+      linewidth = .4
+    ) +
+    geom_label(
+      data = area_clase_tbl2,
+      aes(
+        label = paste0(format(area_prop * 100, digits = 2), "%"),
+        y = area_prop,
+        x = 10
+      ),
+      vjust = -.1,
+      hjust = .5,
+      size = 2,
+      fill = alpha("white", .5),
+      label.size = unit(0, "mm"),
+      inherit.aes = FALSE
+    ) +
+    facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+    scale_y_continuous(
+      labels = scales::label_percent(),
+      expand = expansion(add = c(0, 0), mult = c(0, .05))
+    ) +
+    scale_fill_manual(
+      breaks = clases_orden,
+      values = clases_color
+    ) +
+    coord_cartesian(clip = "off") +
+    labs(x = "Escenario") +
+    theme_classic(base_size = 7) +
+    theme(
+      aspect.ratio = 1,
+      plot.background = element_blank(),
+      axis.ticks = element_line(color = "black"),
+      axis.ticks.x = element_blank(),
+      axis.title.y = element_blank(),
+      axis.text = element_text(color = "black"),
+      axis.text.y = element_text(hjust = 1),
+      panel.background = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.y = element_line(color = "black", linewidth = .1),
+      panel.grid.major.x = element_blank(),
+      strip.background = element_blank(),
+      strip.text = element_text(color = "black")
+    )
+
   ggsave(
     plot = g,
     filename = paste0("figuras/ndri_", X, "_porcentaje.png"),
@@ -653,23 +711,31 @@ La siguiente figura combina los porcentajes de $NDRi$ para nitrógeno (@fig-ndri
 ```{r}
 #| eval: false
 
-g_ndri <- ndri_valor |> 
+g_ndri <- ndri_valor |>
   ggplot(aes(esc, prop, fill = nutriente)) +
   geom_col(position = position_dodge(), show.legend = TRUE) +
   geom_hline(
-    data = area_clase_tbl2, aes(yintercept = area_prop), 
+    data = area_clase_tbl2,
+    aes(yintercept = area_prop),
     color = "black",
-    linetype = 2, linewidth = .4
+    linetype = 2,
+    linewidth = .4
   ) +
   geom_label(
-    data = area_clase_tbl2, 
+    data = area_clase_tbl2,
     aes(
-      label = paste0(format(area_prop*100, digits = 2), "%"), 
-      y = area_prop, x = Inf
+      label = paste0(format(area_prop * 100, digits = 2), "%"),
+      y = area_prop,
+      x = Inf
     ),
-    vjust = -.1, hjust = 1, size = 2, fill = alpha("white", .8),
-    label.size = unit(0, "mm"), label.padding = unit(0, "mm"),
-    label.r = unit(0, "mm"), inherit.aes = FALSE
+    vjust = -.1,
+    hjust = 1,
+    size = 2,
+    fill = alpha("white", .8),
+    label.size = unit(0, "mm"),
+    label.padding = unit(0, "mm"),
+    label.r = unit(0, "mm"),
+    inherit.aes = FALSE
   ) +
   facet_wrap(vars(tipo), nrow = 1, scales = "free") +
   scale_y_continuous(
@@ -703,7 +769,8 @@ g_ndri <- ndri_valor |>
     legend.key.size = unit(.3, "cm"),
     legend.box.spacing = unit(0, "mm"),
     legend.text = element_text(
-      margin = margin(r = 10, l = 2), size = rel(.8)
+      margin = margin(r = 10, l = 2),
+      size = rel(.8)
     )
   )
 
@@ -731,40 +798,43 @@ ggsave(
 m_conect_lulc <- read_csv("datos/m_conect_lulc.csv", show_col_types = FALSE) |>
   rename(metric_lulc = metric)
 
-m_conect_lulc |> 
+m_conect_lulc |>
   pivot_wider(
     names_from = tipo,
     values_from = metric_lulc
-  ) |> 
-  gt() |> 
-  sub_missing() |> 
+  ) |>
+  gt() |>
+  sub_missing() |>
   fmt_auto(
     columns = c(max_d, CCP)
-  ) |> 
+  ) |>
   fmt_number(
-    columns = c(LCP, CPL, IIC), decimals = 1,
+    columns = c(LCP, CPL, IIC),
+    decimals = 1,
     drop_trailing_zeros = TRUE
-  ) |> 
+  ) |>
   fmt_engineering(
     columns = c(SLC, MSC, ECS, AWF),
     exp_style = "E1",
     decimals = 1
-  ) |> 
+  ) |>
   cols_label(
     max_d = "Distancia Máx."
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(),
     style = cell_text(font = "JetBrains Mono")
-  ) |> 
+  ) |>
   tab_source_note(
     source_note = md(
-      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/m_conect_lulc.csv)")
+      glue(
+        "Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/m_conect_lulc.csv)"
+      )
     )
   ) |>
   cols_label(
     max_d = "Distancia Máx."
-  ) |> 
+  ) |>
   tab_options(
     table.border.top.style = "hidden",
     table.width = 1000,
@@ -786,40 +856,43 @@ Las métricas de conectividad por escenario resultaron idénticas, por lo que lo
 
 m_conect <- read_csv("datos/m_conect.csv", show_col_types = FALSE)
 
-m_conect |> 
-  mutate(esc = paste0("Esc. ", esc)) |> 
+m_conect |>
+  mutate(esc = paste0("Esc. ", esc)) |>
   reframe(
     m = mean(metric),
     .by = c(max_d, tipo)
-  ) |> 
+  ) |>
   pivot_wider(
     names_from = tipo,
     values_from = m
-  ) |> 
-  gt() |> 
-  sub_missing() |> 
+  ) |>
+  gt() |>
+  sub_missing() |>
   fmt_auto(
     columns = c(max_d, CCP)
-  ) |> 
+  ) |>
   fmt_number(
-    columns = c(LCP, CPL, IIC), decimals = 1,
+    columns = c(LCP, CPL, IIC),
+    decimals = 1,
     drop_trailing_zeros = TRUE
-  ) |> 
+  ) |>
   fmt_engineering(
     columns = c(SLC, MSC, ECS, AWF),
     decimals = 1,
     exp_style = "E1"
-  ) |> 
+  ) |>
   cols_label(
     max_d = "Distancia Máx."
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(),
     style = cell_text(font = "JetBrains Mono")
-  ) |> 
+  ) |>
   tab_source_note(
     source_note = md(
-      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/m_conect.csv)")
+      glue(
+        "Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/m_conect.csv)"
+      )
     )
   ) |>
   tab_options(
@@ -932,9 +1005,17 @@ d <- read_delim(
   ) |>
   mutate(value = as.integer(value)) |>
   filter(value != 0) |>
-  mutate(col = c(
-    "#58987D", "#377EB8", "#C1D75B", "#75E081", "#8F66B7", "#A65628", "#F781BF"
-  ))
+  mutate(
+    col = c(
+      "#58987D",
+      "#377EB8",
+      "#C1D75B",
+      "#75E081",
+      "#8F66B7",
+      "#A65628",
+      "#F781BF"
+    )
+  )
 
 col_df <- d |>
   select(-tipo) |>
@@ -952,17 +1033,25 @@ coltab(r) <- col_df
 ```{r}
 #| echo: false
 #| layout-ncol: 2
-#| fig-cap: 
+#| fig-cap:
 #|   - "Mapa de clases"
 #|   - "Mapa de modelo digital de elevación"
 
 par(bg = "#FAFAFA")
 plot(
-  r, axes = FALSE, mar = c(1, 1, 1, 8), main = "LULC", background = "#FAFAFA"
+  r,
+  axes = FALSE,
+  mar = c(1, 1, 1, 8),
+  main = "LULC",
+  background = "#FAFAFA"
 )
 
 plot(
-  dem, axes = FALSE, mar = c(1, 1, 1, 8), main = "DEM", background = "#FAFAFA"
+  dem,
+  axes = FALSE,
+  mar = c(1, 1, 1, 8),
+  main = "DEM",
+  background = "#FAFAFA"
 )
 ```
 
@@ -1036,12 +1125,12 @@ d_r <- d |>
   mutate(value = as.integer(seq(0, length(clases) - 1, 1))) |>
   mutate(
     tipo = if_else(tipo == "Grassland", "Forest", tipo)
-  ) |> 
+  ) |>
   add_row(
     value = as.integer(-1),
     tipo = "Grassland",
     col = "#C1D75B"
-  ) |> 
+  ) |>
   mutate(
     col = case_match(
       tipo,
@@ -1069,15 +1158,17 @@ land_raster <- set_names(land_raster, seq(.1, 1, .1))
 
 id <- map_dbl(
   1:length(dependencias),
-  ~which(names(land_raster) == as.character(dependencias)[.x])
+  ~ which(names(land_raster) == as.character(dependencias)[.x])
 )
 
 par(bg = "#FAFAFA")
 walk2(
   .x = id,
   .y = 1:length(dependencias),
-  ~plot(
-    land_raster[[.x]], axes = FALSE, mar = c(1, 1, 1, 8),
+  ~ plot(
+    land_raster[[.x]],
+    axes = FALSE,
+    mar = c(1, 1, 1, 8),
     main = paste0("Dependencia del terreno: ", dependencias[.y]),
     background = "#FAFAFA"
   )
@@ -1139,18 +1230,20 @@ funcion_generica_paisaje <- function(raster, funcion) {
 funciones_paisaje <- ls("package:landscapemetrics")[
   str_detect(ls("package:landscapemetrics"), "lsm_l")
 ]
-funciones_paisaje <- funciones_paisaje[!str_detect(funciones_paisaje, "_cv|_sd")]
+funciones_paisaje <- funciones_paisaje[
+  !str_detect(funciones_paisaje, "_cv|_sd")
+]
 
 funciones_paisaje <- funciones_paisaje[funciones_paisaje != "lsm_l_enn_mn"]
 # 43 funciones
 
 f_contenido_funcion <- function(x) {
-  tools::Rd_db("landscapemetrics")[[paste0("lsm_c_", x, ".Rd")]] |> 
+  tools::Rd_db("landscapemetrics")[[paste0("lsm_c_", x, ".Rd")]] |>
     as.character()
 }
 
 f_contenido_funcion2 <- function(x) {
-  tools::Rd_db("landscapemetrics")[[paste0("lsm_l_", x, ".Rd")]] |> 
+  tools::Rd_db("landscapemetrics")[[paste0("lsm_l_", x, ".Rd")]] |>
     as.character()
 }
 
@@ -1161,15 +1254,15 @@ f_titulo_funcion <- function(x) {
   } #else {
   #   r <- str_trim(str_extract(x, "^.*?\\(.*?\\)[^()]*")) # OK
   # }
-  
+
   if (str_count(x, "\\(") == 2) {
     r <- str_trim(str_extract(x, "^.*?\\(.*?\\)[^()]*"))
   }
-  
+
   if (str_count(x, "\\(") == 0) {
     r <- str_trim(x)
   }
-  
+
   return(r)
 }
 
@@ -1188,32 +1281,32 @@ f_loop_clase_lulc <- function() {
   map2(
     .x = r,
     .y = funciones_clase,
-    ~funcion_generica_clase(raster = .x, funcion = .y),
+    ~ funcion_generica_clase(raster = .x, funcion = .y),
     .progress = TRUE
   ) |>
     list_rbind()
 }
 
 metrica_clase_lulc <- f_loop_clase_lulc() # 53M
-metrica_clase_lulc |> 
-  rename(clase = class) |> 
-  full_join(rename(d, clase = value), by = join_by(clase)) |> 
-  select(-c(col, id, level, layer)) |> 
+metrica_clase_lulc |>
+  rename(clase = class) |>
+  full_join(rename(d, clase = value), by = join_by(clase)) |>
+  select(-c(col, id, level, layer)) |>
   write_csv("datos/metrica_clase_lulc.csv")
 
 f_loop_paisaje_lulc <- function() {
   map2(
     .x = r,
     .y = funciones_paisaje,
-    ~funcion_generica_paisaje(raster = .x, funcion = .y),
+    ~ funcion_generica_paisaje(raster = .x, funcion = .y),
     .progress = TRUE
   ) |>
     list_rbind()
 }
 
 metrica_paisaje_lulc <- f_loop_paisaje_lulc() # 54M
-metrica_paisaje_lulc |> 
-  select(metric, value) |> 
+metrica_paisaje_lulc |>
+  select(metric, value) |>
   write_csv("datos/metrica_paisaje_lulc.csv")
 ```
 
@@ -1224,56 +1317,58 @@ Tabla con métricas a nivel de <b><u>clase</u></b> obteniendo un valor para cada
 ```{r}
 #| column: page
 
-read_csv("datos/metrica_clase_lulc.csv", show_col_types = FALSE) |> 
+read_csv("datos/metrica_clase_lulc.csv", show_col_types = FALSE) |>
   pivot_wider(
     names_from = tipo,
     values_from = value,
     id_cols = metric
-  ) |> 
+  ) |>
   mutate(
     txt = map(metric, f_contenido_funcion)
-  ) |> 
+  ) |>
   mutate(
-    titulo = map_chr(txt, ~.x[16])
-  ) |> 
-  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+    titulo = map_chr(txt, ~ .x[16])
+  ) |>
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |>
   mutate(
     link = paste0(
       "https://r-spatialecology.github.io/landscapemetrics/reference/lsm_c_",
       metric,
       ".html"
     )
-  ) |> 
+  ) |>
   mutate(
     titulo = glue::glue("[{titulo}]({link})")
-  ) |> 
-  select(Métrica = titulo, Forest:`Water body`) |> 
-  arrange(Métrica) |> 
-  gt() |> 
+  ) |>
+  select(Métrica = titulo, Forest:`Water body`) |>
+  arrange(Métrica) |>
+  gt() |>
   fmt_auto(
     columns = Forest:`Water body`,
     locale = "es"
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = Forest:`Water body`),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = c(Métrica)),
     style = cell_text(align = "left")
-  ) |> 
+  ) |>
   cols_label(
     `Sparse vegetation - bare soil` = html("Sparse vegetation<br>Bare soil")
-  ) |> 
-  fmt_url(columns = Métrica, color = "#8E063B") |> 
+  ) |>
+  fmt_url(columns = Métrica, color = "#8E063B") |>
   tab_source_note(
     source_note = md(
-      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/metrica_clase_lulc.csv)")
+      glue(
+        "Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/metrica_clase_lulc.csv)"
+      )
     )
-  ) |> 
+  ) |>
   tab_options(
     table.background.color = "transparent"
-  ) |> 
+  ) |>
   as_raw_html()
 ```
 
@@ -1287,27 +1382,27 @@ Tabla con métricas a nivel de <b><u>paisaje</u></b> para todo el ráster de uso
 
 ```{r}
 
-read_csv("datos/metrica_paisaje_lulc.csv", show_col_types = FALSE) |> 
+read_csv("datos/metrica_paisaje_lulc.csv", show_col_types = FALSE) |>
   mutate(
     txt = map(metric, f_contenido_funcion2)
-  ) |> 
+  ) |>
   mutate(
-    titulo = map_chr(txt, ~.x[16])
-  ) |> 
-  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+    titulo = map_chr(txt, ~ .x[16])
+  ) |>
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |>
   mutate(
     link = paste0(
       "https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_",
       metric,
       ".html"
     )
-  ) |> 
+  ) |>
   mutate(
     titulo = glue::glue("[{titulo}]({link})")
-  ) |> 
-  select(Métrica = titulo, Valor = value) |> 
-  arrange(Métrica) |> 
-  gt() |> 
+  ) |>
+  select(Métrica = titulo, Valor = value) |>
+  arrange(Métrica) |>
+  gt() |>
   fmt_auto(
     columns = Valor,
     locale = "es"
@@ -1315,20 +1410,22 @@ read_csv("datos/metrica_paisaje_lulc.csv", show_col_types = FALSE) |>
   tab_style(
     locations = cells_body(columns = Valor),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = c(Métrica)),
     style = cell_text(align = "left")
-  ) |> 
-  fmt_url(columns = Métrica, color = "#8E063B") |> 
+  ) |>
+  fmt_url(columns = Métrica, color = "#8E063B") |>
   tab_source_note(
     source_note = md(
-      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/metrica_paisaje_lulc.csv)")
+      glue(
+        "Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/metrica_paisaje_lulc.csv)"
+      )
     )
-  ) |> 
+  ) |>
   tab_options(
     table.background.color = "transparent"
-  ) |> 
+  ) |>
   as_raw_html()
 ```
 
@@ -1347,7 +1444,7 @@ f_loop_clase <- function(z, dep) {
   map2(
     .x = land_raster[[z]],
     .y = funciones_clase,
-    ~funcion_generica_clase(raster = .x, funcion = .y),
+    ~ funcion_generica_clase(raster = .x, funcion = .y),
     .progress = TRUE
   ) |>
     list_rbind() |>
@@ -1377,42 +1474,42 @@ metricas_csv <- list.files(
   full.names = TRUE
 )[1:10]
 
-m_clase <- read_csv(metricas_csv, show_col_types = FALSE) |> 
-  rename(clase = class) |> 
+m_clase <- read_csv(metricas_csv, show_col_types = FALSE) |>
+  rename(clase = class) |>
   inner_join(
     rename(d_r, clase = value),
     by = join_by(clase)
-  ) |> 
+  ) |>
   select(metric, valor = value, dependencia_terreno, tipo)
 
-metric_orden <- m_clase |> 
+metric_orden <- m_clase |>
   mutate(
     v = scales::rescale(valor),
     .by = metric
-  ) |> 
-  select(-valor) |> 
+  ) |>
+  select(-valor) |>
   pivot_wider(
     names_from = tipo,
     values_from = v,
     id_cols = c(dependencia_terreno, metric)
-  ) |> 
-  unnest(-metric) |> 
+  ) |>
+  unnest(-metric) |>
   mutate(
     s = Forest + Agriculture + Urban
-  ) |> 
-  nest(.by = metric) |> 
+  ) |>
+  nest(.by = metric) |>
   mutate(
-    dep_min = map(data, ~slice_min(.x, order_by = dependencia_terreno)$s),
-    dep_max = map(data, ~slice_max(.x, order_by = dependencia_terreno)$s)
-  ) |> 
-  unnest(cols = starts_with("dep_")) |> 
+    dep_min = map(data, ~ slice_min(.x, order_by = dependencia_terreno)$s),
+    dep_max = map(data, ~ slice_max(.x, order_by = dependencia_terreno)$s)
+  ) |>
+  unnest(cols = starts_with("dep_")) |>
   mutate(
-    p = abs(dep_min - dep_max)/((dep_min + dep_max)/2)
-  ) |> 
-  select(metric, data, p) |> 
-  unnest(data) |> 
-  mutate(metric = fct_reorder(metric, p, .fun = mean)) |> 
-  distinct(metric) |> 
+    p = abs(dep_min - dep_max) / ((dep_min + dep_max) / 2)
+  ) |>
+  select(metric, data, p) |>
+  unnest(data) |>
+  mutate(metric = fct_reorder(metric, p, .fun = mean)) |>
+  distinct(metric) |>
   pull()
 
 m_clase <- mutate(m_clase, metric = fct(metric, levels = levels(metric_orden)))
@@ -1431,52 +1528,54 @@ m_clase |>
   pivot_wider(
     names_from = tipo,
     values_from = v
-  ) |> 
+  ) |>
   mutate(
     txt = map(metric, f_contenido_funcion)
-  ) |> 
+  ) |>
   mutate(
-    titulo = map_chr(txt, ~.x[16])
-  ) |> 
+    titulo = map_chr(txt, ~ .x[16])
+  ) |>
   mutate(
     eq = map_chr(txt, f_eq)
-  ) |> 
-  mutate(eq = paste0("$$", eq, "$$")) |> 
-  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+  ) |>
+  mutate(eq = paste0("$$", eq, "$$")) |>
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |>
   mutate(
     link = paste0(
       "https://r-spatialecology.github.io/landscapemetrics/reference/lsm_c_",
       metric,
       ".html"
     )
-  ) |> 
+  ) |>
   mutate(
     titulo = glue::glue("[{titulo}]({link})")
-  ) |> 
+  ) |>
   select(Métrica = titulo, Grassland, Forest, Agriculture, Urban) |>
-  arrange(Métrica) |> 
-  gt() |> 
+  arrange(Métrica) |>
+  gt() |>
   fmt_auto(
     columns = c(Grassland, Forest, Agriculture, Urban),
     locale = "es"
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = c(Grassland, Forest, Agriculture, Urban)),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = c(Métrica)),
     style = cell_text(align = "left")
-  ) |> 
+  ) |>
   fmt_url(columns = Métrica, color = "#8E063B") |>
   tab_source_note(
     source_note = md(
-      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/métricas_X_cla.csv)")
+      glue(
+        "Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/métricas_X_cla.csv)"
+      )
     )
-  ) |> 
+  ) |>
   tab_options(
     table.background.color = "transparent"
-  ) |> 
+  ) |>
   as_raw_html()
 ```
 
@@ -1492,24 +1591,24 @@ La métricas de clase que mostraron cambios con la dependencia del terreno se ob
 #| eval: false
 
 g1 <- m_clase |>
-  filter(as.numeric(metric) > 12) |> 
-  nest(.by = metric) |> 
+  filter(as.numeric(metric) > 12) |>
+  nest(.by = metric) |>
   mutate(
     txt = map(metric, f_contenido_funcion)
-  ) |> 
+  ) |>
   mutate(
-    titulo = map_chr(txt, ~.x[16])
-  ) |> 
-  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
-  mutate(titulo = str_wrap(titulo, 17)) |> 
-  unnest(data) |> 
-  mutate(titulo = fct_reorder(titulo, as.numeric(metric))) |> 
+    titulo = map_chr(txt, ~ .x[16])
+  ) |>
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |>
+  mutate(titulo = str_wrap(titulo, 17)) |>
+  unnest(data) |>
+  mutate(titulo = fct_reorder(titulo, as.numeric(metric))) |>
   ggplot(aes(dependencia_terreno, valor, color = tipo, group = tipo)) +
   geom_line(alpha = .8) +
   facet_wrap(vars(titulo), scales = "free", ncol = 10) +
   scale_x_continuous(
-    breaks = seq(.1, 1, .1), 
-    labels = c("0,1", "", "", "", "", "", "", "", "", "1"), 
+    breaks = seq(.1, 1, .1),
+    labels = c("0,1", "", "", "", "", "", "", "", "", "1"),
     expand = c(0, 0),
     name = NULL
   ) +
@@ -1567,7 +1666,7 @@ f_loop_paisaje <- function(z, dep) {
   map2(
     .x = land_raster[[z]],
     .y = funciones_paisaje,
-    ~funcion_generica_paisaje(raster = .x, funcion = .y),
+    ~ funcion_generica_paisaje(raster = .x, funcion = .y),
     .progress = TRUE
   ) |>
     list_rbind() |>
@@ -1599,32 +1698,35 @@ metricas2_csv <- list.files(
   full.names = TRUE
 )[1:10]
 
-m_paisaje <- read_csv(metricas2_csv, show_col_types = FALSE) |> 
-  select(metric, valor = value, dependencia_terreno) |> 
+m_paisaje <- read_csv(metricas2_csv, show_col_types = FALSE) |>
+  select(metric, valor = value, dependencia_terreno) |>
   drop_na()
 
-metric_orden2 <- m_paisaje |> 
+metric_orden2 <- m_paisaje |>
   mutate(
     v = scales::rescale(valor),
     .by = metric
-  ) |> 
-  select(-valor) |> 
-  nest(.by = metric) |> 
+  ) |>
+  select(-valor) |>
+  nest(.by = metric) |>
   mutate(
-    dep_min = map(data, ~slice_min(.x, order_by = dependencia_terreno)$v),
-    dep_max = map(data, ~slice_max(.x, order_by = dependencia_terreno)$v)
-  ) |> 
-  unnest(cols = starts_with("dep_")) |> 
+    dep_min = map(data, ~ slice_min(.x, order_by = dependencia_terreno)$v),
+    dep_max = map(data, ~ slice_max(.x, order_by = dependencia_terreno)$v)
+  ) |>
+  unnest(cols = starts_with("dep_")) |>
   mutate(
-    p = abs(dep_min - dep_max)/((dep_min + dep_max)/2)
-  ) |> 
-  select(metric, data, p) |> 
-  unnest(data) |> 
-  mutate(metric = fct_reorder(metric, p, .fun = mean)) |> 
-  distinct(metric) |> 
+    p = abs(dep_min - dep_max) / ((dep_min + dep_max) / 2)
+  ) |>
+  select(metric, data, p) |>
+  unnest(data) |>
+  mutate(metric = fct_reorder(metric, p, .fun = mean)) |>
+  distinct(metric) |>
   pull()
 
-m_paisaje <- mutate(m_paisaje, metric = fct(metric, levels = levels(metric_orden2)))
+m_paisaje <- mutate(
+  m_paisaje,
+  metric = fct(metric, levels = levels(metric_orden2))
+)
 ```
 
 ::: {#tbl-met-paisaje-indep}
@@ -1639,28 +1741,28 @@ m_paisaje |>
   ) |>
   mutate(
     txt = map(metric, f_contenido_funcion2)
-  ) |> 
+  ) |>
   mutate(
-    titulo = map_chr(txt, ~.x[16])
-  ) |> 
+    titulo = map_chr(txt, ~ .x[16])
+  ) |>
   mutate(
     eq = map_chr(txt, f_eq)
-  ) |> 
-  mutate(eq = paste0("$$", eq, "$$")) |> 
-  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+  ) |>
+  mutate(eq = paste0("$$", eq, "$$")) |>
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |>
   mutate(
     link = paste0(
       "https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_",
       metric,
       ".html"
     )
-  ) |> 
+  ) |>
   mutate(
     titulo = glue::glue("[{titulo}]({link})")
-  ) |> 
+  ) |>
   select(Métrica = titulo, Valor = v) |>
-  arrange(Métrica) |> 
-  gt() |> 
+  arrange(Métrica) |>
+  gt() |>
   fmt_auto(
     columns = Valor,
     locale = "es"
@@ -1668,20 +1770,22 @@ m_paisaje |>
   tab_style(
     locations = cells_body(columns = Valor),
     style = cell_text(font = "JetBrains Mono", color = "black")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = c(Métrica)),
     style = cell_text(align = "left")
-  ) |> 
+  ) |>
   fmt_url(columns = Métrica, color = "#8E063B") |>
   tab_source_note(
     source_note = md(
-      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/métricas_X_pai.csv)")
+      glue(
+        "Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/métricas_X_pai.csv)"
+      )
     )
-  ) |> 
+  ) |>
   tab_options(
     table.background.color = "transparent"
-  ) |> 
+  ) |>
   as_raw_html()
 ```
 
@@ -1698,29 +1802,29 @@ Con las métricas del paisaje que varían con la dependencia del terreno se cre�
 #| eval: false
 
 g2 <- m_paisaje |>
-  filter(as.numeric(metric) > 10) |> 
-  nest(.by = metric) |> 
+  filter(as.numeric(metric) > 10) |>
+  nest(.by = metric) |>
   mutate(
     txt = map(metric, f_contenido_funcion2)
-  ) |> 
+  ) |>
   mutate(
-    titulo = map_chr(txt, ~.x[16])
-  ) |> 
-  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
-  mutate(titulo = str_wrap(titulo, 17)) |> 
-  unnest(data) |> 
-  mutate(titulo = fct_reorder(titulo, as.numeric(metric))) |> 
+    titulo = map_chr(txt, ~ .x[16])
+  ) |>
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |>
+  mutate(titulo = str_wrap(titulo, 17)) |>
+  unnest(data) |>
+  mutate(titulo = fct_reorder(titulo, as.numeric(metric))) |>
   ggplot(aes(dependencia_terreno, valor, group = metric)) +
   geom_line(alpha = .8, color = "#8E063B") +
   facet_wrap(vars(titulo), scales = "free", ncol = 8) +
   scale_x_continuous(
-    breaks = seq(.1, 1, .1), 
-    labels = c("0,1", "", "", "", "", "", "", "", "", "1"), 
+    breaks = seq(.1, 1, .1),
+    labels = c("0,1", "", "", "", "", "", "", "", "", "1"),
     expand = c(0, 0),
     name = NULL
   ) +
   scale_y_continuous(
-    name = NULL, 
+    name = NULL,
     labels = scales::label_number(big.mark = ".", decimal.mark = ",")
   ) +
   scale_color_manual(name = NULL) +
@@ -1791,7 +1895,7 @@ tibble(
     locations = cells_body(columns = -Clase),
     style = cell_text(font = "JetBrains Mono", color = "black")
   ) |>
-  tab_header(title = md("**Caso I**")) |> 
+  tab_header(title = md("**Caso I**")) |>
   tab_options(
     table.background.color = "transparent"
   )
@@ -1943,7 +2047,7 @@ Visualizo los resultados de ambos casos.
 
 ```{r}
 #| layout-ncol: 2
-#| fig-cap: 
+#| fig-cap:
 #|   - Mapa de clases para el Caso I
 #|   - Mapa de clases para el Caso II
 
@@ -1971,7 +2075,10 @@ coltab(r_custom) <- col_df_custom
 par(bg = "#FAFAFA")
 
 plot(
-  r_custom, axes = FALSE, mar = c(1, 1, 1, 4), main = "Caso I",
+  r_custom,
+  axes = FALSE,
+  mar = c(1, 1, 1, 4),
+  main = "Caso I",
   background = "#FAFAFA"
 )
 
@@ -1997,7 +2104,10 @@ levels(r_custom2) <- d_custom2
 coltab(r_custom2) <- col_df_custom2
 
 plot(
-  r_custom2, axes = FALSE, mar = c(1, 1, 1, 4), main = "Caso II", 
+  r_custom2,
+  axes = FALSE,
+  mar = c(1, 1, 1, 4),
+  main = "Caso II",
   background = "#FAFAFA"
 )
 ```
@@ -2058,7 +2168,9 @@ read_tsv("datos/df_custom.tsv", show_col_types = FALSE) |>
   gt() |>
   cols_label(
     `Number of patches` = md("Number of<br>patches"),
-    `Percentage of landscape of class` = md("Percentage of<br>landscape of class"),
+    `Percentage of landscape of class` = md(
+      "Percentage of<br>landscape of class"
+    ),
     "clase" = ""
   ) |>
   tab_style(
@@ -2077,7 +2189,7 @@ read_tsv("datos/df_custom.tsv", show_col_types = FALSE) |>
     decimals = 1,
     sep_mark = "."
   ) |>
-  tab_header(title = md("**Caso I**")) |> 
+  tab_header(title = md("**Caso I**")) |>
   tab_options(
     table.background.color = "transparent"
   )
@@ -2111,7 +2223,9 @@ read_tsv("datos/df_custom2.tsv", show_col_types = FALSE) |>
   gt() |>
   cols_label(
     `Number of patches` = md("Number of<br>patches"),
-    `Percentage of landscape of class` = md("Percentage of<br>landscape of class"),
+    `Percentage of landscape of class` = md(
+      "Percentage of<br>landscape of class"
+    ),
     "clase" = ""
   ) |>
   tab_style(
@@ -2130,7 +2244,7 @@ read_tsv("datos/df_custom2.tsv", show_col_types = FALSE) |>
     decimals = 1,
     sep_mark = "."
   ) |>
-  tab_header(title = md("**Caso II**")) |> 
+  tab_header(title = md("**Caso II**")) |>
   tab_options(
     table.background.color = "transparent"
   )
@@ -2214,7 +2328,7 @@ f_extract <- function(raster, vector, producto, escenario) {
     append_cols = "lyr.1",
     max_cells_in_memory = 230000000
   ) |>
-    rename(value = "lyr.1") |> 
+    rename(value = "lyr.1") |>
     inner_join(d_r, by = join_by(value)) |>
     mutate(prod = producto) |>
     mutate(esc = escenario) |>
@@ -2277,10 +2391,10 @@ f_gg_nutrientes <- function(nutriente) {
     filter(prod == nutriente) |>
     mutate(total = sum(sum), .by = c(esc, prod)) |>
     mutate(esc = factor(esc)) |>
-    mutate(prod = toupper(prod)) |> 
+    mutate(prod = toupper(prod)) |>
     mutate(
       factor(prod, levels = c("Urban", "Grassland", "Forest", "Agriculture"))
-    ) |> 
+    ) |>
     ggplot(aes(esc, sum)) +
     geom_col(fill = alpha("#8E063B", .4)) +
     facet_wrap(vars(tipo), scales = "free", nrow = 1) +
@@ -2341,80 +2455,85 @@ La siguiente tabla resume las cantidades y tipos de nutrientes, por clase y esce
 ```{r}
 
 nutri_files <- list.files(
-  path = "datos/", pattern = "nutriente", full.names = TRUE
+  path = "datos/",
+  pattern = "nutriente",
+  full.names = TRUE
 )[2:5]
 nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
 
-nutri_tbl |> 
-  mutate(tipo = fct_reorder(tipo, sum)) |> 
-  arrange(tipo) |> 
+nutri_tbl |>
+  mutate(tipo = fct_reorder(tipo, sum)) |>
+  arrange(tipo) |>
   pivot_wider(
     names_from = tipo,
     values_from = sum,
     id_cols = c(prod, esc)
-  ) |> 
-  mutate(esc = paste0("Esc. ", esc)) |> 
-  mutate(prod = toupper(prod)) |> 
+  ) |>
+  mutate(esc = paste0("Esc. ", esc)) |>
+  mutate(prod = toupper(prod)) |>
   mutate(
     prod = factor(
-      prod, levels = c("N_TOTAL_EXPORT", "NDR_N", "P_SURFACE_EXPORT", "NDR_P")
+      prod,
+      levels = c("N_TOTAL_EXPORT", "NDR_N", "P_SURFACE_EXPORT", "NDR_P")
     )
-  ) |> 
-  arrange(prod) |> 
-  rowwise() |> 
+  ) |>
+  arrange(prod) |>
+  rowwise() |>
   mutate(
     total = sum(c(Urban, Grassland, Forest, Agriculture))
-  ) |> 
-  ungroup() |> 
-  gt(groupname_col = "prod", rowname_col = "esc") |> 
-  tab_stub_indent(indent = 5, rows = everything()) |> 
-  fmt_number(decimals = 0, dec_mark = ",", sep_mark = ".") |> 
+  ) |>
+  ungroup() |>
+  gt(groupname_col = "prod", rowname_col = "esc") |>
+  tab_stub_indent(indent = 5, rows = everything()) |>
+  fmt_number(decimals = 0, dec_mark = ",", sep_mark = ".") |>
   tab_style(
     locations = cells_body(),
     style = cell_text(font = "JetBrains Mono")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_row_groups(),
     style = cell_text(weight = "bold", color = "black")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(columns = "total"),
     style = cell_fill(color = "grey93")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_column_labels(columns = "total"),
     style = cell_fill(color = "grey93")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_row_groups(groups = c("N_TOTAL_EXPORT", "NDR_N")),
     style = cell_fill(color = "#FFF8FB")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_row_groups(groups = c("P_SURFACE_EXPORT", "NDR_P")),
     style = cell_fill(color = "#F1F9E5")
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_stub(),
     style = cell_fill(color = "grey97")
-  ) |> 
+  ) |>
   tab_spanner(
     label = "Clase",
     columns = c("Urban", "Grassland", "Forest", "Agriculture")
-  ) |> 
+  ) |>
   cols_label(
     esc = "Escenario",
     total = html("<i>Total por<br>escenario</i>")
-  ) |> 
+  ) |>
   tab_source_note(
     source_note = md(
-      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/nutrientes_X_clase_X_escenario.csv)")
+      glue(
+        "Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/nutrientes_X_clase_X_escenario.csv)"
+      )
     )
-  ) |> 
+  ) |>
   tab_options(
     table.width = 700,
     table.border.top.style = "hidden",
     table.background.color = "transparent"
-  ) |> 
+  ) |>
   as_raw_html()
 ```
 
@@ -2456,49 +2575,58 @@ area_clase_csv <- list.files(
 )
 
 nutri_files <- list.files(
-  path = "datos/", pattern = "nutriente", full.names = TRUE
+  path = "datos/",
+  pattern = "nutriente",
+  full.names = TRUE
 )[2:5]
 nutri_tbl <- read_csv(nutri_files, show_col_types = FALSE)
 
 f_gg_area <- function(i_nutriente) {
-  nutri_tbl |> 
-  mutate(tipo = fct_reorder(tipo, sum)) |> 
-  mutate(
-    porcentaje = sum/sum(sum), .by = c(esc, prod)
-  ) |> 
-  arrange(tipo) |> 
-  mutate(esc = factor(esc)) |> 
-  mutate(fraccion = sum/sum(sum), .by = c(esc, prod)) |> 
-  filter(prod == i_nutriente) |> 
-  ggplot(aes(esc, fraccion)) +
-  geom_hline(
-    data = area_clase_tbl, aes(yintercept = area_prop), alpha = .8,
-    color = "#8E063B", linetype = 2, linewidth = 1
-  ) +
-  geom_line(aes(group = tipo), color = "#8E063B") +
-  geom_point(color = "#8E063B") +
-  facet_wrap(vars(tipo), nrow = 1, scales = "free") +
-  scale_y_continuous(
-    labels = scales::label_percent(
-      accuracy = .1, big.mark = ".", decimal.mark = ","
+  nutri_tbl |>
+    mutate(tipo = fct_reorder(tipo, sum)) |>
+    mutate(
+      porcentaje = sum / sum(sum),
+      .by = c(esc, prod)
+    ) |>
+    arrange(tipo) |>
+    mutate(esc = factor(esc)) |>
+    mutate(fraccion = sum / sum(sum), .by = c(esc, prod)) |>
+    filter(prod == i_nutriente) |>
+    ggplot(aes(esc, fraccion)) +
+    geom_hline(
+      data = area_clase_tbl,
+      aes(yintercept = area_prop),
+      alpha = .8,
+      color = "#8E063B",
+      linetype = 2,
+      linewidth = 1
+    ) +
+    geom_line(aes(group = tipo), color = "#8E063B") +
+    geom_point(color = "#8E063B") +
+    facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+    scale_y_continuous(
+      labels = scales::label_percent(
+        accuracy = .1,
+        big.mark = ".",
+        decimal.mark = ","
+      )
+    ) +
+    labs(x = NULL, y = NULL, title = toupper(i_nutriente)) +
+    theme_bw(base_family = "Lato", base_size = 13) +
+    theme(
+      aspect.ratio = 1,
+      plot.background = element_blank(),
+      strip.placement = "outside",
+      strip.text = element_text(face = "bold"),
+      panel.background = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_line(color = "grey30", linewidth = .1),
+      axis.ticks = element_blank(),
+      axis.text = element_text(color = "black"),
+      axis.text.x = element_text(margin = margin(t = 0)),
+      axis.text.y = element_text(margin = margin(r = 0)),
+      panel.spacing.x = unit(.7, "cm")
     )
-  ) +
-  labs(x = NULL, y = NULL, title = toupper(i_nutriente)) +
-  theme_bw(base_family = "Lato", base_size = 13) +
-  theme(
-    aspect.ratio = 1,
-    plot.background = element_blank(),
-    strip.placement = "outside",
-    strip.text = element_text(face = "bold"),
-    panel.background = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.grid.major = element_line(color = "grey30", linewidth = .1),
-    axis.ticks = element_blank(),
-    axis.text = element_text(color = "black"),
-    axis.text.x = element_text(margin = margin(t = 0)),
-    axis.text.y = element_text(margin = margin(r = 0)),
-    panel.spacing.x = unit(.7, "cm")
-  )
 }
 
 l_gg_area <- purrr::map(
@@ -2543,7 +2671,8 @@ area_ref_tbl <- area_clase_tbl |>
 area_gt_tbl <- nutri_tbl |>
   mutate(tipo = fct_reorder(tipo, sum)) |>
   mutate(
-    fraccion = sum/sum(sum), .by = c(esc, prod)
+    fraccion = sum / sum(sum),
+    .by = c(esc, prod)
   ) |>
   arrange(tipo) |>
   mutate(esc = paste0("Esc. ", esc)) |>
@@ -2556,7 +2685,8 @@ area_gt_tbl <- nutri_tbl |>
   mutate(prod = toupper(prod)) |>
   mutate(
     prod = factor(
-      prod, levels = c("N_TOTAL_EXPORT", "NDR_N", "P_SURFACE_EXPORT", "NDR_P")
+      prod,
+      levels = c("N_TOTAL_EXPORT", "NDR_N", "P_SURFACE_EXPORT", "NDR_P")
     )
   ) |>
   arrange(prod) |>
@@ -2565,7 +2695,9 @@ area_gt_tbl <- nutri_tbl |>
 gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |>
   tab_stub_indent(indent = 3, rows = everything()) |>
   fmt_percent(
-    decimals = 1, sep_mark = ".", dec_mark = ","
+    decimals = 1,
+    sep_mark = ".",
+    dec_mark = ","
   ) |>
   tab_style(
     locations = cells_body(),
@@ -2602,13 +2734,15 @@ gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |>
   cols_width(ref ~ pct(8)) |>
   tab_style(
     style = cell_text(
-      weight = "bold", decorate = "underline", color = "#8E063B"
+      weight = "bold",
+      decorate = "underline",
+      color = "#8E063B"
     ),
     locations = purrr::map(
       1:nrow(area_gt_tbl),
       \(fila) {
         cells_body(
-          columns = which(area_gt_tbl[fila, 3:12] > area_gt_tbl$ref[fila])+2,
+          columns = which(area_gt_tbl[fila, 3:12] > area_gt_tbl$ref[fila]) + 2,
           rows = fila
         )
       }
@@ -2627,14 +2761,16 @@ gt(area_gt_tbl, groupname_col = "prod", rowname_col = "tipo") |>
   ) |>
   tab_source_note(
     source_note = md(
-      glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/fraccion_nutrientes_X_clase_X_escenario.csv)")
+      glue(
+        "Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/fraccion_nutrientes_X_clase_X_escenario.csv)"
+      )
     )
   ) |>
   tab_options(
     table.width = 1300,
     table.border.top.style = "hidden",
     table.background.color = "transparent"
-  ) |> 
+  ) |>
   as_raw_html()
 ```
 
@@ -2721,15 +2857,16 @@ m_conect_lulc <- purrr::map(
 
 write_csv(m_conect_lulc, "datos/m_conect_lulc.csv")
 
-g5 <- m_conect_lulc |> 
-  mutate(tipo = m_nombres[tipo]) |> 
-  mutate(tipo = factor(tipo, m_nombres)) |> 
-  drop_na() |> 
-  mutate(max_d = factor(max_d)) |> 
+g5 <- m_conect_lulc |>
+  mutate(tipo = m_nombres[tipo]) |>
+  mutate(tipo = factor(tipo, m_nombres)) |>
+  drop_na() |>
+  mutate(max_d = factor(max_d)) |>
   ggplot(aes(max_d, metric_lulc, group = tipo)) +
   geom_col(fill = alpha("#8E063B", .4), color = NA) +
   facet_wrap(
-    vars(tipo), scales = "free_y", 
+    vars(tipo),
+    scales = "free_y",
     axis.labels = "all_x",
     nrow = 5
   ) +
@@ -2747,7 +2884,11 @@ g5 <- m_conect_lulc |>
     panel.grid.major.y = element_line(color = "grey90"),
     panel.grid = element_blank(),
     strip.text = element_text(
-      angle = 0, size = rel(1.1), hjust = .5, face = "bold", family = "Lato"
+      angle = 0,
+      size = rel(1.1),
+      hjust = .5,
+      face = "bold",
+      family = "Lato"
     ),
     strip.background = element_blank(),
     axis.text = element_text(size = rel(1), color = "black"),
@@ -2881,7 +3022,9 @@ coltab(r_con4) <- col_r_df
 
 par(bg = "#FAFAFA")
 plot(
-  r_con4, axes = FALSE, mar = c(1, 1, 1, 8),
+  r_con4,
+  axes = FALSE,
+  mar = c(1, 1, 1, 8),
   main = "Dependencia del terreno: 0,5\nConectividad: 4",
   background = "#FAFAFA"
 )
@@ -2899,16 +3042,16 @@ f_loop_clase_con4 <- function() {
   map2(
     .x = r_con4,
     .y = funciones_clase,
-    ~funcion_generica_clase(raster = .x, funcion = .y),
+    ~ funcion_generica_clase(raster = .x, funcion = .y),
     .progress = TRUE
   ) |>
     list_rbind()
 }
 
 metrica_clase_con4 <- f_loop_clase_con4()
-metrica_clase_con4 |> 
-  full_join(rename(d_r, class = value), by = join_by(class)) |> 
-  select(class, tipo, metric, value) |> 
+metrica_clase_con4 |>
+  full_join(rename(d_r, class = value), by = join_by(class)) |>
+  select(class, tipo, metric, value) |>
   write_csv("datos/con4_cla.csv")
 
 # métricas de paisaje
@@ -2916,19 +3059,19 @@ f_loop_paisaje_con4 <- function() {
   map2(
     .x = r_con4,
     .y = funciones_paisaje,
-    ~funcion_generica_paisaje(raster = .x, funcion = .y),
+    ~ funcion_generica_paisaje(raster = .x, funcion = .y),
     .progress = TRUE
   ) |>
     list_rbind()
 }
 
 metrica_paisaje_con4 <- f_loop_paisaje_con4()
-metrica_paisaje_con4 |> 
-  select(metric, value) |> 
+metrica_paisaje_con4 |>
+  select(metric, value) |>
   write_csv("datos/con4_pai.csv")
 
 # métricas de conectividad
-v_con4 <- as.polygons(r_con4) |> 
+v_con4 <- as.polygons(r_con4) |>
   project("EPSG:32720")
 writeVector(v_con4, "vectores/v_con4.gpkg")
 
@@ -2975,40 +3118,41 @@ write_csv(m_conect_con4, "datos/m_conect_con4.csv")
 #| eval: false
 
 metrica_clase_con4 <- read_csv(
-  "datos/con4_cla.csv", show_col_types = FALSE
-) |> 
-  select(-class) |> 
+  "datos/con4_cla.csv",
+  show_col_types = FALSE
+) |>
+  select(-class) |>
   mutate(conectividad = 4)
 
-clase_4_8 <- read_csv("datos/métricas_X_cla.csv", show_col_types = FALSE) |> 
-  filter(dependencia_terreno == .5) |> 
-  select(-dependencia_terreno) |> 
-  mutate(conectividad = 8) |> 
-  bind_rows(metrica_clase_con4) |> 
-  mutate(conectividad = paste0("Conec. ", conectividad)) |> 
+clase_4_8 <- read_csv("datos/métricas_X_cla.csv", show_col_types = FALSE) |>
+  filter(dependencia_terreno == .5) |>
+  select(-dependencia_terreno) |>
+  mutate(conectividad = 8) |>
+  bind_rows(metrica_clase_con4) |>
+  mutate(conectividad = paste0("Conec. ", conectividad)) |>
   pivot_wider(
     names_from = c(tipo, conectividad),
     values_from = value
-  ) |> 
+  ) |>
   mutate(
     txt = map(metric, f_contenido_funcion)
-  ) |> 
+  ) |>
   mutate(
-    titulo = map_chr(txt, ~.x[16])
-  ) |> 
-  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+    titulo = map_chr(txt, ~ .x[16])
+  ) |>
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |>
   mutate(
     link = paste0(
       "https://r-spatialecology.github.io/landscapemetrics/reference/lsm_c_",
       metric,
       ".html"
     )
-  ) |> 
+  ) |>
   mutate(
     metric = glue::glue("[{titulo}]({link})")
-  ) |> 
-  select(-c(txt, titulo, link)) |> 
-  arrange(metric) |> 
+  ) |>
+  select(-c(txt, titulo, link)) |>
+  arrange(metric) |>
   relocate(1, 2, 6, 3, 7, 4, 8, 5, 9)
 
 write_csv(clase_4_8, "datos/clase_4_8.csv")
@@ -3023,27 +3167,29 @@ La tabla muestra los valores de métricas de <u>clase</u>, para cada clase de su
 
 clase_4_8 <- read_csv("datos/clase_4_8.csv", show_col_types = FALSE)
 
-clase_4_8 |> 
-  gt() |> 
-  fmt_auto(locale = "es", columns = -metric) |> 
-  fmt_url(columns = metric, color = "#8E063B") |> 
+clase_4_8 |>
+  gt() |>
+  fmt_auto(locale = "es", columns = -metric) |>
+  fmt_url(columns = metric, color = "#8E063B") |>
   tab_style(
     locations = cells_body(columns = "metric"),
     style = cell_text(align = "left")
-  ) |> 
+  ) |>
   tab_style(
     style = cell_text(
-      weight = "bold", decorate = "underline", color = "#8E063B"
+      weight = "bold",
+      decorate = "underline",
+      color = "#8E063B"
     ),
     locations = purrr::map(
       1:nrow(clase_4_8),
       \(fila) {
         cells_body(
           columns = c(
-            which(clase_4_8[fila, 2] > clase_4_8[fila, 3])+1,
-            which(clase_4_8[fila, 4] > clase_4_8[fila, 5])+3,
-            which(clase_4_8[fila, 6] > clase_4_8[fila, 7])+5,
-            which(clase_4_8[fila, 8] > clase_4_8[fila, 9])+7,
+            which(clase_4_8[fila, 2] > clase_4_8[fila, 3]) + 1,
+            which(clase_4_8[fila, 4] > clase_4_8[fila, 5]) + 3,
+            which(clase_4_8[fila, 6] > clase_4_8[fila, 7]) + 5,
+            which(clase_4_8[fila, 8] > clase_4_8[fila, 9]) + 7,
           ),
           rows = fila
         )
@@ -3053,28 +3199,28 @@ clase_4_8 |>
   tab_style(
     locations = cells_body(columns = -metric),
     style = cell_text(font = "JetBrains Mono")
-  ) |> 
+  ) |>
   tab_spanner(
     columns = starts_with("Grassland"),
     label = "Grassland"
-  ) |> 
+  ) |>
   tab_spanner(
     columns = starts_with("Forest"),
     label = "Forest"
-  ) |> 
+  ) |>
   tab_spanner(
     columns = starts_with("Agriculture"),
     label = "Agriculture"
-  ) |> 
+  ) |>
   tab_spanner(
     columns = starts_with("Urban"),
     label = "Urban"
-  ) |> 
+  ) |>
   cols_label(
     ends_with("Conec. 8") ~ "Conec. 8",
     ends_with("Conec. 4") ~ "Conec. 4",
     metric ~ "Métrica"
-  ) |> 
+  ) |>
   tab_footnote(
     footnote = html(
       "<b style='font-family: JetBrains Mono; color: #8E063B'>Texto
@@ -3084,9 +3230,11 @@ clase_4_8 |>
   ) |>
   tab_source_note(
     source_note = md(
-      glue::glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/clase_4_8.csv)")
+      glue::glue(
+        "Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/clase_4_8.csv)"
+      )
     )
-  ) |> 
+  ) |>
   tab_options(
     table.border.top.style = "hidden",
     table.background.color = "transparent"
@@ -3103,38 +3251,39 @@ Tabla comparativa de métricas de clase.
 #| eval: false
 
 metrica_paisaje_con4 <- read_csv(
-  "datos/con4_pai.csv", show_col_types = FALSE
-) |> 
+  "datos/con4_pai.csv",
+  show_col_types = FALSE
+) |>
   mutate(conectividad = 4)
 
-paisaje_4_8 <- read_csv("datos/métricas_X_pai.csv", show_col_types = FALSE) |> 
-  filter(dependencia_terreno == .5) |> 
-  select(-dependencia_terreno) |> 
-  mutate(conectividad = 8) |> 
-  bind_rows(metrica_paisaje_con4) |> 
-  mutate(conectividad = paste0("Conec. ", conectividad)) |> 
+paisaje_4_8 <- read_csv("datos/métricas_X_pai.csv", show_col_types = FALSE) |>
+  filter(dependencia_terreno == .5) |>
+  select(-dependencia_terreno) |>
+  mutate(conectividad = 8) |>
+  bind_rows(metrica_paisaje_con4) |>
+  mutate(conectividad = paste0("Conec. ", conectividad)) |>
   pivot_wider(
     names_from = conectividad,
     values_from = value
-  ) |> 
+  ) |>
   mutate(
     txt = map(metric, f_contenido_funcion2)
-  ) |> 
+  ) |>
   mutate(
-    titulo = map_chr(txt, ~.x[16])
-  ) |> 
-  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |> 
+    titulo = map_chr(txt, ~ .x[16])
+  ) |>
+  mutate(titulo = map_chr(titulo, f_titulo_funcion)) |>
   mutate(
     link = paste0(
       "https://r-spatialecology.github.io/landscapemetrics/reference/lsm_l_",
       metric,
       ".html"
     )
-  ) |> 
+  ) |>
   mutate(
     metric = glue::glue("[{titulo}]({link})")
-  ) |> 
-  select(1:3) |> 
+  ) |>
+  select(1:3) |>
   arrange(metric)
 
 write_csv(paisaje_4_8, "datos/paisaje_4_8.csv")
@@ -3147,24 +3296,26 @@ La tabla muestra los valores de métricas de <u>paisaje</u>, para cada clase de 
 ```{r}
 paisaje_4_8 <- read_csv("datos/paisaje_4_8.csv", show_col_types = FALSE)
 
-paisaje_4_8 |> 
-  gt() |> 
-  fmt_auto(locale = "es", columns = -metric) |> 
-  fmt_url(columns = metric, color = "#8E063B") |> 
+paisaje_4_8 |>
+  gt() |>
+  fmt_auto(locale = "es", columns = -metric) |>
+  fmt_url(columns = metric, color = "#8E063B") |>
   tab_style(
     locations = cells_body(columns = "metric"),
     style = cell_text(align = "left")
-  ) |> 
+  ) |>
   tab_style(
     style = cell_text(
-      weight = "bold", decorate = "underline", color = "#8E063B"
+      weight = "bold",
+      decorate = "underline",
+      color = "#8E063B"
     ),
     locations = purrr::map(
       1:nrow(paisaje_4_8),
       \(fila) {
         cells_body(
           columns = c(
-            which(paisaje_4_8[fila, 2] > paisaje_4_8[fila, 3])+1
+            which(paisaje_4_8[fila, 2] > paisaje_4_8[fila, 3]) + 1
           ),
           rows = fila
         )
@@ -3174,10 +3325,10 @@ paisaje_4_8 |>
   tab_style(
     locations = cells_body(columns = -metric),
     style = cell_text(font = "JetBrains Mono")
-  ) |> 
+  ) |>
   cols_label(
     metric ~ "Métrica"
-  ) |> 
+  ) |>
   tab_footnote(
     footnote = html(
       "<b style='font-family: JetBrains Mono; color: #8E063B'>Texto
@@ -3187,14 +3338,16 @@ paisaje_4_8 |>
   ) |>
   tab_source_note(
     source_note = md(
-      glue::glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/paisaje_4_8.csv)")
+      glue::glue(
+        "Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/paisaje_4_8.csv)"
+      )
     )
-  ) |> 
-  sub_missing() |> 
+  ) |>
+  sub_missing() |>
   tab_options(
     table.border.top.style = "hidden",
     table.background.color = "transparent"
-  ) |> 
+  ) |>
   as_raw_html()
 ```
 
@@ -3208,26 +3361,30 @@ Tabla comparativa de métricas de paisaje.
 #| eval: false
 
 metrica_conectividad_con4 <- read_csv(
-  "datos/m_conect_con4.csv", show_col_types = FALSE
-) |> 
+  "datos/m_conect_con4.csv",
+  show_col_types = FALSE
+) |>
   mutate(conectividad = 4)
 
-conectividad_4_8 <- read_csv("datos/m_conect.csv", show_col_types = FALSE) |> 
-  filter(esc == 5) |> 
-  select(-esc) |> 
-  mutate(conectividad = 8) |> 
-  bind_rows(metrica_conectividad_con4) |> 
-  mutate(conectividad = paste0("Conec. ", conectividad)) |> 
+conectividad_4_8 <- read_csv("datos/m_conect.csv", show_col_types = FALSE) |>
+  filter(esc == 5) |>
+  select(-esc) |>
+  mutate(conectividad = 8) |>
+  bind_rows(metrica_conectividad_con4) |>
+  mutate(conectividad = paste0("Conec. ", conectividad)) |>
   pivot_wider(
     names_from = conectividad,
     values_from = metric
-  ) |> 
+  ) |>
   mutate(tipo = m_nombres[tipo]) |>
   mutate(
     max_d = format(
-      max_d, big.mark = ".", decimal.mark = ",", scientific = FALSE
+      max_d,
+      big.mark = ".",
+      decimal.mark = ",",
+      scientific = FALSE
     )
-  ) |> 
+  ) |>
   mutate(max_d = paste0("Distancia Máx: ", max_d))
 
 write_csv(conectividad_4_8, "datos/conectividad_4_8.csv")
@@ -3239,33 +3396,36 @@ La tabla muestra los valores de métricas de <u>conectividad</u>, considerando u
 
 ```{r}
 conectividad_4_8 <- read_csv(
-  "datos/conectividad_4_8.csv", show_col_types = FALSE
+  "datos/conectividad_4_8.csv",
+  show_col_types = FALSE
 )
 
-conectividad_4_8 |> 
-  gt(rowname_col = "tipo", groupname_col = "max_d") |> 
-  fmt_auto(locale = "es") |> 
-  sub_missing() |> 
+conectividad_4_8 |>
+  gt(rowname_col = "tipo", groupname_col = "max_d") |>
+  fmt_auto(locale = "es") |>
+  sub_missing() |>
   tab_style(
     locations = cells_row_groups(),
     style = list(
       cell_fill(color = alpha("#8E063B", .2)),
       cell_text(weight = "bold")
     )
-  ) |> 
+  ) |>
   tab_style(
     locations = cells_body(),
     style = cell_text(font = "JetBrains Mono")
-  ) |> 
+  ) |>
   tab_source_note(
     source_note = md(
-      glue::glue("Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/conectividad_4_8.csv)")
+      glue::glue(
+        "Datos (.csv) disponibles para su [descarga {bsicons::bs_icon('download')} ](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/datos/conectividad_4_8.csv)"
+      )
     )
-  ) |> 
+  ) |>
   tab_options(
     table.border.top.style = "hidden",
     table.background.color = "transparent"
-  ) |> 
+  ) |>
   as_raw_html()
 ```
 

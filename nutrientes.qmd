@@ -73,6 +73,331 @@ library(terra)
 
 # Figuras y tablas {.unnumbered}
 
+Cantidad de nutrientes para N y P, en <u>miles</u>, y porcentajes, por clase y escenario.
+
+```{r}
+#| eval: false
+
+clases_orden <- c("Grassland", "Forest", "Agriculture", "Urban")
+clases_color <- c("#C1D75B", "#58987D", "#75E081", "#8F66B7")
+
+f_gg_nutriente <- function(X) {
+  n_p_basin |>
+    filter(nut == X) |>
+    ggplot(aes(esc, valor, fill = clase)) +
+    geom_col(color = NA, show.legend = FALSE) +
+    facet_wrap(vars(clase), scales = "free", nrow = 1) +
+    scale_y_continuous(
+      labels = scales::label_number(
+        decimal.mark = ".",
+        big.mark = ",",
+        scale = 1e-3
+      ),
+      expand = expansion(add = c(0, 0), mult = c(0, .05))
+    ) +
+    scale_fill_manual(
+      breaks = clases_orden,
+      values = clases_color
+    ) +
+    labs(x = "Escenario") +
+    theme_classic(base_size = 7) +
+    theme(
+      aspect.ratio = 1,
+      plot.background = element_blank(),
+      axis.ticks = element_line(color = "black"),
+      axis.ticks.x = element_blank(),
+      axis.title.y = element_blank(),
+      axis.text = element_text(color = "black"),
+      axis.text.y = element_text(hjust = 1),
+      panel.background = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.y = element_line(color = "black", linewidth = .1),
+      panel.grid.major.x = element_blank(),
+      strip.background = element_blank(),
+      strip.text = element_text(color = "black")
+    )
+}
+
+fig_nutrientes_1 <- f_gg_nutriente("N")
+fig_nutrientes_2 <- f_gg_nutriente("P")
+
+fig_nutrientes_3 <- nutri_tbl |>
+  mutate(tipo = fct_reorder(tipo, sum)) |>
+  mutate(
+    porcentaje = sum / sum(sum),
+    .by = c(esc, prod)
+  ) |>
+  arrange(tipo) |>
+  mutate(esc = factor(esc)) |>
+  mutate(fraccion = sum / sum(sum), .by = c(esc, prod)) |>
+  filter(prod %in% c("n_total_export", "p_surface_export")) |>
+  mutate(tipo = factor(tipo, clases_orden)) |>
+  ggplot(aes(esc, fraccion, fill = prod)) +
+  geom_col(position = position_dodge()) +
+  geom_hline(
+    data = area_clase_tbl2,
+    aes(yintercept = area_prop),
+    color = "black",
+    linetype = 2,
+    linewidth = .4
+  ) +
+  geom_label(
+    data = area_clase_tbl2,
+    aes(
+      label = paste0(format(area_prop * 100, digits = 2), "%"),
+      y = area_prop,
+      x = 10
+    ),
+    vjust = -.1,
+    hjust = .5,
+    size = 2,
+    fill = alpha("white", .5),
+    label.size = unit(0, "mm"),
+    inherit.aes = FALSE
+  ) +
+  facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+  scale_y_continuous(
+    labels = scales::label_percent(),
+    expand = expansion(mult = c(0, .1), add = c(0, 0))
+  ) +
+  scale_fill_manual(
+    breaks = c("n_total_export", "p_surface_export"),
+    labels = c("N", "P"),
+    values = c("#4FB6CA", "#E3C28B")
+  ) +
+  coord_cartesian(clip = "off") +
+  labs(x = "Escenario", fill = NULL) +
+  theme_classic(base_size = 7) +
+  theme(
+    aspect.ratio = 1,
+    plot.background = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text = element_text(color = "black"),
+    axis.text.x = element_text(margin = margin(t = 1)),
+    axis.text.y = element_text(hjust = 1),
+    panel.spacing.x = unit(8, "pt"),
+    panel.ontop = FALSE,
+    panel.background = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_line(color = "black", linewidth = .1),
+    panel.grid.major.x = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(color = "black"),
+    legend.position = "top",
+    legend.background = element_blank(),
+    legend.key.size = unit(.3, "cm"),
+    legend.box.spacing = unit(0, "mm"),
+    legend.text = element_text(
+      margin = margin(r = 10, l = 2),
+      size = rel(.8)
+    )
+  )
+
+fig_nutrientes_comp <- (fig_nutrientes_1 /
+  fig_nutrientes_2 /
+  fig_nutrientes_3) +
+  plot_annotation(
+    tag_levels = "A"
+  ) &
+  theme(
+    plot.background = element_blank(),
+    plot.tag.position = "topleft",
+    plot.tag.location = "margin",
+    plot.tag = element_text(
+      size = 12,
+      margin = margin(b = 0, r = -15),
+      face = "bold"
+    )
+  )
+
+ggsave(
+  plot = fig_nutrientes_comp,
+  filename = "figuras/nutriente_compuesto_x3.png",
+  width = 15,
+  height = 15,
+  units = "cm"
+)
+```
+
+::: {.column-margin}
+
+[Descargar figura {{< bi download >}}](figuras/nutriente_compuesto_x3.png)
+
+:::
+
+::: {.column-page}
+
+![Cantidad de nitrógeno (A) y fósforo (B) por clase y escenario, y proporción de nutrientes respecto de su superficie (C).](figuras/nutriente_compuesto_x3.png){#fig-nutriente-x3}
+
+:::
+
+Valores de $NDR_{i}$ para N y P, en <u>millones</u>, y porcentajes, por clase y escenario.
+
+```{r}
+#| eval: false
+
+ndri_valor <- readxl::read_xlsx("datos/ndri_nutri.xlsx") |>
+  janitor::clean_names() |>
+  select(nutriente, esc, forest, grassland, agriculture, urban) |>
+  mutate(esc = str_remove(esc, "SCENARIO ")) |>
+  mutate(esc = as.numeric(esc)) |>
+  pivot_longer(
+    cols = -c(esc, nutriente),
+    values_to = "ndri",
+    names_to = "tipo"
+  ) |>
+  mutate(tipo = str_to_sentence(tipo)) |>
+  mutate(tipo = factor(tipo, clases_orden)) |>
+  mutate(esc = factor(esc)) |>
+  mutate(
+    suma = sum(ndri),
+    .by = c(nutriente, esc)
+  ) |>
+  mutate(
+    prop = ndri / suma
+  )
+
+f_gg_ndri <- function(X) {
+  ndri_valor |>
+    filter(nutriente == X) |>
+    ggplot(aes(esc, ndri, fill = tipo)) +
+    geom_col(show.legend = FALSE) +
+    facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+    scale_y_continuous(
+      labels = scales::label_number(
+        scale = 1e-6,
+        decimal.mark = ".",
+        big.mark = ","
+      ),
+      expand = expansion(add = c(0, 0), mult = c(0, .05))
+    ) +
+    scale_fill_manual(
+      breaks = clases_orden,
+      values = clases_color
+    ) +
+    labs(x = "Escenario") +
+    theme_classic(base_size = 7) +
+    theme(
+      aspect.ratio = 1,
+      plot.background = element_blank(),
+      axis.ticks = element_line(color = "black"),
+      axis.ticks.x = element_blank(),
+      axis.title.y = element_blank(),
+      axis.text = element_text(color = "black"),
+      axis.text.y = element_text(hjust = 1),
+      panel.background = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.y = element_line(color = "black", linewidth = .1),
+      panel.grid.major.x = element_blank(),
+      strip.background = element_blank(),
+      strip.text = element_text(color = "black")
+    )
+}
+
+fig_ndri_1 <- f_gg_ndri("N")
+fig_ndri_2 <- f_gg_ndri("P")
+
+fig_ndri_3 <- ndri_valor |>
+  ggplot(aes(esc, prop, fill = nutriente)) +
+  geom_col(position = position_dodge(), show.legend = TRUE) +
+  geom_hline(
+    data = area_clase_tbl2,
+    aes(yintercept = area_prop),
+    color = "black",
+    linetype = 2,
+    linewidth = .4
+  ) +
+  geom_label(
+    data = area_clase_tbl2,
+    aes(
+      label = paste0(format(area_prop * 100, digits = 2), "%"),
+      y = area_prop,
+      x = Inf
+    ),
+    vjust = -.1,
+    hjust = 1,
+    size = 2,
+    fill = alpha("white", .8),
+    label.size = unit(0, "mm"),
+    label.padding = unit(0, "mm"),
+    label.r = unit(0, "mm"),
+    inherit.aes = FALSE
+  ) +
+  facet_wrap(vars(tipo), nrow = 1, scales = "free") +
+  scale_y_continuous(
+    labels = scales::label_percent(),
+    expand = expansion(add = c(0, 0), mult = c(0, .05))
+  ) +
+  scale_fill_manual(
+    breaks = c("N", "P"),
+    values = c("#4FB6CA", "#E3C28B")
+  ) +
+  coord_cartesian(clip = "off") +
+  labs(x = "Escenario", fill = NULL) +
+  theme_classic(base_size = 7) +
+  theme(
+    aspect.ratio = 1,
+    plot.background = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text = element_text(color = "black"),
+    axis.text.y = element_text(hjust = 1),
+    panel.background = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_line(color = "black", linewidth = .1),
+    panel.grid.major.x = element_blank(),
+    panel.spacing.x = unit(12, "pt"),
+    strip.background = element_blank(),
+    strip.text = element_text(color = "black"),
+    legend.position = "top",
+    legend.background = element_blank(),
+    legend.key.size = unit(.3, "cm"),
+    legend.box.spacing = unit(0, "mm"),
+    legend.text = element_text(
+      margin = margin(r = 10, l = 2),
+      size = rel(.8)
+    )
+  )
+
+fig_ndri_comp <- (fig_ndri_1 / fig_ndri_2 / fig_ndri_3) +
+  plot_annotation(
+    tag_levels = "A"
+  ) &
+  theme(
+    plot.background = element_blank(),
+    plot.tag.position = "topleft",
+    plot.tag.location = "margin",
+    plot.tag = element_text(
+      size = 12,
+      margin = margin(b = 0, r = -15),
+      face = "bold"
+    )
+  )
+
+ggsave(
+  plot = fig_ndri_comp,
+  filename = "figuras/ndri_compuesto_x3.png",
+  width = 15,
+  height = 15,
+  units = "cm"
+)
+```
+
+::: {.column-margin}
+
+[Descargar figura {{< bi download >}}](figuras/ndri_compuesto_x3.png)
+
+:::
+
+::: {.column-page}
+
+![$NDR_{i}$ de nitrógeno (A) y fósforo (B) por clase y escenario, y porcentajes respecto de su superficie (C).](figuras/ndri_compuesto_x3.png){#fig-ndri-x3}
+
+:::
+
 Las figuras a continuación muestran las cantidades de nutrientes por clase y escenario.
 
 ```{r}

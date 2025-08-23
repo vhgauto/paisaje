@@ -223,7 +223,7 @@ ggsave(
 
 ::: {.column-margin}
 
-[Descargar figura {{< bi download >}}](figuras/nutriente_compuesto_x3.png)
+[Descargar figura {{< bi download >}}](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/figuras/nutriente_compuesto_x3.png)
 
 :::
 
@@ -388,7 +388,7 @@ ggsave(
 
 ::: {.column-margin}
 
-[Descargar figura {{< bi download >}}](figuras/ndri_compuesto_x3.png)
+[Descargar figura {{< bi download >}}](https://raw.githubusercontent.com/vhgauto/paisaje/refs/heads/main/figuras/ndri_compuesto_x3.png)
 
 :::
 
